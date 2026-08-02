@@ -55,6 +55,7 @@ function run(command: string, args: string[], cwd: string): Promise<void> {
       cwd,
       env: {
         ...process.env,
+        CI: 'true',
         npm_config_yes: 'true',
         npm_config_update_notifier: 'false',
       },
@@ -458,10 +459,13 @@ async function createTemplateProject(projectRoot: string, language: ScriptLangua
 
   s.start('Creating Vue project with Vite')
   if (targetExists) {
-    await run('npm', ['create', '--yes', 'vite@latest', '.', '--', '--template', viteTemplate], projectRoot)
+    await run('npm', ['exec', '--yes', 'create-vite@latest', '--', '.', '--template', viteTemplate], projectRoot)
   } else {
     await mkdir(parent, { recursive: true })
-    await run('npm', ['create', '--yes', 'vite@latest', projectName, '--', '--template', viteTemplate], parent)
+    await run('npm', ['exec', '--yes', 'create-vite@latest', '--', projectName, '--template', viteTemplate], parent)
+  }
+  if (!existsSync(path.join(projectRoot, 'package.json'))) {
+    throw new Error(`Vite did not create a package.json in ${projectRoot}.`)
   }
   s.stop('Created Vite project')
 
