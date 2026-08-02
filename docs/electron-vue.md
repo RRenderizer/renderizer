@@ -55,6 +55,17 @@ exposeRenderizerBridge()
 
 ## Vue
 
+```ts
+import { createApp } from 'vue'
+import { createRenderizer } from '@renderizer/vue'
+import App from './App.vue'
+import renderizerConfig from '../renderizer.config'
+
+createApp(App)
+  .use(createRenderizer(renderizerConfig))
+  .mount('#app')
+```
+
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'

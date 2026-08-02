@@ -1,3 +1,5 @@
+export { createRenderizer } from './plugin'
+export { default as RenderizerProvider } from './RenderizerProvider'
 export { default as RenderWindow } from './RenderWindow'
 export {
   defineRenderizerConfig,

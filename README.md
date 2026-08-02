@@ -20,6 +20,17 @@ Renderizer keeps the app state in one runtime and treats native windows as extra
 
 ## Vue Example
 
+```ts
+import { createApp } from 'vue'
+import { createRenderizer } from '@renderizer/vue'
+import App from './App.vue'
+import renderizerConfig from '../renderizer.config'
+
+createApp(App)
+  .use(createRenderizer(renderizerConfig))
+  .mount('#app')
+```
+
 ```vue
 <script setup lang="ts">
 import { RenderWindow } from '@renderizer/vue'
