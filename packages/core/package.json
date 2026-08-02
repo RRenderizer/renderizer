@@ -20,12 +20,27 @@
     "test": "node --test dist/**/*.test.js"
   },
   "keywords": [
+    "renderizer",
+    "electron",
     "window-open",
     "multi-window",
     "teleport",
     "portal"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RRenderizer/renderizer.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/RRenderizer/renderizer/issues"
+  },
+  "homepage": "https://github.com/RRenderizer/renderizer#readme",
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "devDependencies": {
     "typescript": "^5.9.2"
   }

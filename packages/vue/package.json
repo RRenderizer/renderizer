@@ -27,12 +27,26 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "keywords": [
+    "renderizer",
     "vue",
     "teleport",
     "electron",
     "multi-window"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RRenderizer/renderizer.git",
+    "directory": "packages/vue"
+  },
+  "bugs": {
+    "url": "https://github.com/RRenderizer/renderizer/issues"
+  },
+  "homepage": "https://github.com/RRenderizer/renderizer#readme",
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "peerDependencies": {
     "electron": ">=28",
     "vue": ">=3.4"

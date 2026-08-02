@@ -27,6 +27,19 @@
     "electron"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RRenderizer/renderizer.git",
+    "directory": "packages/create"
+  },
+  "bugs": {
+    "url": "https://github.com/RRenderizer/renderizer/issues"
+  },
+  "homepage": "https://github.com/RRenderizer/renderizer#readme",
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "dependencies": {
     "@clack/prompts": "^1.7.0"
   },
