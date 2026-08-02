@@ -321,7 +321,7 @@ h1 {
 }
 
 function electronMainSource(language: ScriptLanguage): string {
-  const configImport = language === 'ts' ? '../renderizer.config' : '../renderizer.config.js'
+  const configImport = '../renderizer.config.js'
   const typeImport = language === 'ts' ? "import type { BrowserWindowConstructorOptions } from 'electron'\n" : ''
   const returnType = language === 'ts' ? ': BrowserWindowConstructorOptions' : ''
   const optionsType = language === 'ts' ? ': BrowserWindowConstructorOptions' : ''
