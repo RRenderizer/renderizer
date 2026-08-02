@@ -1,0 +1,126 @@
+:root {
+  color: #e8edf5;
+  background: #10141c;
+  font-family: "Aptos", "Segoe UI", sans-serif;
+}
+
+:root[data-theme="light"] {
+  color: #18202d;
+  background: #f4f7fb;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(45, 180, 145, 0.18), transparent 32rem),
+    linear-gradient(315deg, rgba(80, 120, 255, 0.14), transparent 28rem),
+    var(--page-bg, #10141c);
+  color: inherit;
+}
+
+:root[data-theme="light"] body {
+  --page-bg: #f4f7fb;
+}
+
+button {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: #39d39f;
+  color: #07120f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: transparent;
+  color: inherit;
+}
+
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+}
+
+.hero {
+  width: min(760px, 100%);
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #39d39f;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  max-width: 680px;
+  font-size: clamp(42px, 8vw, 82px);
+  line-height: 0.96;
+}
+
+.hero p:not(.eyebrow) {
+  max-width: 620px;
+  color: color-mix(in srgb, currentColor 72%, transparent);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.inspector {
+  display: grid;
+  gap: 18px;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 28px;
+  background: inherit;
+  color: inherit;
+}
+
+.inspector header,
+.inspector article {
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.inspector header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 18px;
+}
+
+.inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inspector article {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 18px;
+}
+
+.inspector span {
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  font-size: 13px;
+}

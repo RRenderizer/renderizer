@@ -108,6 +108,35 @@ export default defineRenderizerConfig({
 `
 }
 
+function vueExampleComponentSource(): string {
+  return `<script setup lang="ts">
+import { ref } from 'vue'
+import { RenderWindow } from '@renderizer/vue'
+
+const open = ref(false)
+</script>
+
+<template>
+  <button type="button" @click="open = true">
+    Open Renderizer Inspector
+  </button>
+
+  <RenderWindow
+    v-model:open="open"
+    window-id="renderizer-inspector-example"
+    config-id="inspector"
+  >
+    <section style="display: grid; gap: 12px; padding: 24px; color: var(--renderizer-example-text, inherit);">
+      <h1 style="margin: 0; font-size: 20px;">Renderizer Inspector</h1>
+      <p style="margin: 0; line-height: 1.5;">
+        This content is rendered by the same Vue app inside a native Electron window.
+      </p>
+    </section>
+  </RenderWindow>
+</template>
+`
+}
+
 async function main(): Promise<void> {
   intro('Renderizer')
 
@@ -151,6 +180,13 @@ async function main(): Promise<void> {
     ],
   }))
 
+  const shouldCreateExample = adapter === 'vue'
+    ? cancelIfNeeded(await confirm({
+        message: 'Create an example RenderWindow component?',
+        initialValue: true,
+      }))
+    : false
+
   const adapterPackage = adapterPackages[adapter]
   if (!adapterPackage) {
     cancel(`@renderizer/${adapter} is not published yet. Choose Vue for the current alpha.`)
@@ -177,6 +213,16 @@ async function main(): Promise<void> {
     electron: relativePath(projectRoot, electronRoot),
   }), 'utf8')
   s.stop(`Created ${path.basename(configPath)}`)
+
+  if (shouldCreateExample) {
+    const examplePath = path.join(rendererRoot, 'src', 'renderizer', 'RenderizerInspectorExample.vue')
+    if (!existsSync(examplePath)) {
+      s.start('Writing example RenderWindow component')
+      await mkdir(path.dirname(examplePath), { recursive: true })
+      await writeFile(examplePath, vueExampleComponentSource(), 'utf8')
+      s.stop(`Created ${relativePath(projectRoot, examplePath)}`)
+    }
+  }
 
   const packageManager = resolvePackageManager()
   const installRoots = [...new Set([rendererRoot, electronRoot])]
