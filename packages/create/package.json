@@ -4,7 +4,7 @@
   "description": "Interactive CLI for adding Renderizer to an existing project.",
   "type": "module",
   "bin": {
-    "create-renderizer": "./dist/index.js"
+    "create-renderizer": "dist/index.js"
   },
   "exports": {
     ".": {
