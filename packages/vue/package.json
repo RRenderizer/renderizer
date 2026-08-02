@@ -60,7 +60,7 @@
     "@renderizer/core": "^0.1.0-alpha.1"
   },
   "devDependencies": {
-    "electron": "^37.3.1",
+    "electron": "^43.2.0",
     "typescript": "^5.9.2",
     "vue": "^3.5.18"
   }

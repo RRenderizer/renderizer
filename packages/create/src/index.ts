@@ -436,7 +436,9 @@ function packageJsonSource(projectName: string, language: ScriptLanguage): strin
     main: language === 'ts' ? 'dist-electron/electron/main.js' : 'electron/main.js',
     scripts: {
       dev: 'vite --host 127.0.0.1',
-      'dev:electron': language === 'ts' ? 'npm run build:electron && electron .' : 'electron .',
+      'dev:electron': language === 'ts'
+        ? 'concurrently -k "vite --host 127.0.0.1" "npm run build:electron && wait-on http://127.0.0.1:5173 && electron ."'
+        : 'concurrently -k "vite --host 127.0.0.1" "wait-on http://127.0.0.1:5173 && electron ."',
       build: language === 'ts' ? 'vite build && npm run build:electron' : 'vite build',
       ...(language === 'ts' ? { 'build:electron': 'tsc -p tsconfig.electron.json' } : {}),
       'type-check': language === 'ts' ? 'vue-tsc --noEmit && tsc -p tsconfig.electron.json --noEmit' : 'vite build',
@@ -448,7 +450,9 @@ function packageJsonSource(projectName: string, language: ScriptLanguage): strin
       vue: '^3.5.18',
     },
     devDependencies: {
-      electron: '^37.3.1',
+      concurrently: '^9.2.0',
+      electron: '^43.2.0',
+      'wait-on': '^8.0.3',
       ...(language === 'ts'
         ? {
             typescript: '^5.9.2',
