@@ -19,6 +19,8 @@ export interface RenderWindowManagerOptions {
 
 const defaultFramePrefix = 'renderizer'
 const windowIdPattern = /^[a-z0-9][a-z0-9:_-]{0,127}$/
+const booleanFeatureKeys = ['frame', 'transparent', 'alwaysOnTop', 'resizable'] as const
+const numberFeatureKeys = ['width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight', 'left', 'top'] as const
 
 export function createRenderWindowFrameName(windowId: string, framePrefix = defaultFramePrefix): string {
   if (!windowIdPattern.test(windowId)) {
@@ -34,6 +36,40 @@ export function parseRenderWindowFrameName(frameName: string, framePrefix = defa
   return windowIdPattern.test(windowId) ? windowId : null
 }
 
+function parseFeatureString(features: string): Record<string, string | boolean | undefined> {
+  const parsed: Record<string, string | boolean | undefined> = {}
+  for (const entry of features.split(',')) {
+    const [rawKey, rawValue] = entry.split('=')
+    const key = rawKey?.trim()
+    if (!key) continue
+    parsed[key] = rawValue?.trim() ?? true
+  }
+  return parsed
+}
+
+function readElectronWindowFeatures(features: string): BrowserWindowConstructorOptions {
+  const parsedFeatures = parseFeatureString(features)
+  const options: BrowserWindowConstructorOptions = {}
+  for (const key of booleanFeatureKeys) {
+    const value = parsedFeatures[key]
+    if (value === true || value === 'yes' || value === 'true' || value === '1') {
+      ;(options as Record<string, unknown>)[key] = true
+    }
+    if (value === false || value === 'no' || value === 'false' || value === '0') {
+      ;(options as Record<string, unknown>)[key] = false
+    }
+  }
+  for (const key of numberFeatureKeys) {
+    const value = parsedFeatures[key]
+    const parsed = typeof value === 'string' ? Number(value) : Number.NaN
+    if (Number.isFinite(parsed)) {
+      ;(options as Record<string, unknown>)[key === 'left' ? 'x' : key === 'top' ? 'y' : key] = parsed
+    }
+  }
+  if (typeof parsedFeatures.backgroundColor === 'string') options.backgroundColor = parsedFeatures.backgroundColor
+  return options
+}
+
 export class RenderWindowManager {
   private readonly windows = new Map<string, BrowserWindow>()
   private opener: WebContents | null = null
@@ -45,7 +81,7 @@ export class RenderWindowManager {
 
   attachTo(opener: BrowserWindow): void {
     this.opener = opener.webContents
-    opener.webContents.setWindowOpenHandler(({ url, frameName }) => {
+    opener.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
       const windowId = parseRenderWindowFrameName(frameName, this.framePrefix)
       if (url !== 'about:blank' || !windowId) {
         if ((url.startsWith('https://') || url.startsWith('http://')) && this.options.openExternal) {
@@ -63,6 +99,7 @@ export class RenderWindowManager {
         show: false,
         backgroundColor: '#111318',
         ...this.options.defaultWindowOptions,
+        ...readElectronWindowFeatures(features),
         webPreferences: {
           preload: this.options.preloadPath,
           contextIsolation: true,

@@ -4,7 +4,22 @@ import type { WindowFeatureOptions } from '@renderizer/core'
 import { useRenderWindow, type RenderizerBridge, type UseRenderWindowOptions } from './useRenderWindow.js'
 import { getRenderizerConfig, resolveRenderWindowPreset } from './config.js'
 
-const windowOpenFeatureKeys = ['width', 'height', 'left', 'top', 'popup', 'resizable'] as const
+const windowOpenFeatureKeys = [
+  'width',
+  'height',
+  'left',
+  'top',
+  'popup',
+  'resizable',
+  'minWidth',
+  'minHeight',
+  'maxWidth',
+  'maxHeight',
+  'frame',
+  'transparent',
+  'backgroundColor',
+  'alwaysOnTop',
+] as const
 
 function pickWindowOpenFeatures(source: Partial<WindowFeatureOptions> | undefined): WindowFeatureOptions {
   const features: WindowFeatureOptions = {}

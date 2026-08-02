@@ -5,6 +5,14 @@ export interface WindowFeatureOptions {
   top?: number
   popup?: boolean
   resizable?: boolean
+  minWidth?: number
+  minHeight?: number
+  maxWidth?: number
+  maxHeight?: number
+  frame?: boolean
+  transparent?: boolean
+  backgroundColor?: string
+  alwaysOnTop?: boolean
 }
 
 export interface WindowSurfaceSyncOptions {
@@ -51,6 +59,14 @@ export function normalizeWindowFeatures(features: WindowFeatureOptions = {}): st
     ['left', features.left],
     ['top', features.top],
     ['resizable', features.resizable],
+    ['minWidth', features.minWidth],
+    ['minHeight', features.minHeight],
+    ['maxWidth', features.maxWidth],
+    ['maxHeight', features.maxHeight],
+    ['frame', features.frame],
+    ['transparent', features.transparent],
+    ['backgroundColor', features.backgroundColor],
+    ['alwaysOnTop', features.alwaysOnTop],
   ] as const
 
   return entries

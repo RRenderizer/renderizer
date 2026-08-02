@@ -17,6 +17,31 @@ const adapterPackages: Record<Adapter, string | null> = {
   react: null,
 }
 
+const renderizerLogoSvg = `<svg width="441" height="392" viewBox="0 0 441 392" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g filter="url(#filter0_d_2_12)">
+<path d="M272.007 342.204C239.827 376.424 189.547 387.234 146.567 367.104C134.037 361.234 122.777 353.264 112.927 343.414L40.9569 271.454C21.0269 251.524 11.2768 223.334 10.1068 195.444C8.75685 163.174 20.2468 131.864 41.9068 108.344C68.9368 79.0042 108.707 65.0642 147.947 71.5742C153.137 60.6742 159.207 51.2542 166.847 42.7242C207.427 -2.56577 278.217 -6.97576 323.007 35.1342L397.087 108.434C417.857 128.984 428.427 157.974 430.407 186.744C434.557 247.144 395.127 303.554 335.817 317.764C320.467 321.444 305.077 321.544 289.307 318.974C284.327 327.404 278.717 335.064 272.007 342.194V342.204ZM172.247 333.084C202.337 341.804 234.267 329.184 250.507 303.114C243.617 298.494 237.137 294.214 231.367 288.514L173.927 231.724L126.227 231.624C111.987 231.594 99.4168 223.824 92.1968 212.794C84.0468 200.334 83.2169 185.224 89.2269 172.004C95.2369 158.774 107.497 150.054 121.667 148.034C136.557 145.904 149.737 151.614 160.147 161.914L215.037 216.294L256.847 257.544C286.857 285.694 333.097 285.414 363.167 258.014C398.127 226.164 400.367 170.864 367.357 136.424L333.347 102.834L299.977 69.7642C287.027 56.9242 270.687 49.1842 252.357 48.3642C224.987 47.1342 199.527 61.7542 186.557 86.1742C193.437 90.5942 200.267 94.7342 206.147 100.534L259.467 153.104L313.457 153.354C328.057 153.424 341.297 161.774 348.707 174.104C360.187 193.234 355.657 217.814 338.397 231.864C321.507 245.614 296.087 245.054 280.277 229.464L183.597 134.174C165.617 116.454 141.157 107.914 116.027 112.044C95.3968 115.434 76.9468 126.544 64.8568 143.724C56.0568 156.234 50.5568 170.424 49.7468 185.914C48.6368 207.144 55.7569 228.734 70.4569 244.284L107.197 280.784L139.337 312.714C148.707 322.024 159.217 329.324 172.237 333.094L172.247 333.084Z" fill="#262422"/>
+</g>
+<defs>
+<filter id="filter0_d_2_12" x="0" y="0" width="440.706" height="391.203" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="5"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2_12"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_2_12" result="shape"/>
+</filter>
+</defs>
+</svg>
+`
+
+const vueLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 10 128 110">
+  <path fill="#42b883" d="M78.8,10L64,35.4L49.2,10H0l64,110l64-110C128,10,78.8,10,78.8,10z"/>
+  <path fill="#35495e" d="M78.8,10L64,35.4L49.2,10H25.6L64,76l38.4-66H78.8z"/>
+</svg>
+`
+
 function resolvePackageManager(): PackageManager {
   const userAgent = process.env.npm_config_user_agent ?? ''
   if (userAgent.startsWith('pnpm')) return 'pnpm'
@@ -100,15 +125,15 @@ export default defineRenderizerConfig({
     },
     presets: [
       {
-        id: 'inspector',
-        title: 'Inspector',
-        width: 1200,
-        height: 760,
+        id: 'todos',
+        title: 'Renderizer Todos',
+        width: 940,
+        height: 680,
         popup: true,
         minWidth: 720,
         minHeight: 480,
-        frame: false,
-        backgroundColor: '#111318',
+        frame: true,
+        backgroundColor: '#FEF9F4',
       },
     ],
   },
@@ -132,59 +157,79 @@ createApp(App)
 
 function vueAppSource(language: ScriptLanguage): string {
   return `<script setup${language === 'ts' ? ' lang="ts"' : ''}>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RenderWindow } from '@renderizer/vue'
+import RenderizerLogo from './assets/renderizer_logo.svg?raw'
+import VueLogo from './assets/vue-js.svg?raw'
 
 const open = ref(false)
-const theme = ref${language === 'ts' ? "<'dark' | 'light'>" : ''}('dark')
+const theme = ref${language === 'ts' ? "<'dark' | 'light'>" : ''}('light')
+const newTodo = ref('')
+const todos = ref([
+  { id: 1, text: 'Open a native Electron window', done: true },
+  { id: 2, text: 'Share Vue state between windows', done: false },
+  { id: 3, text: 'Toggle the theme live', done: false },
+])
+const remainingTodos = computed(() => todos.value.filter((todo) => !todo.done).length)
 
 function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
   document.documentElement.dataset.theme = theme.value
+}
+
+function addTodo() {
+  const text = newTodo.value.trim()
+  if (!text) return
+  todos.value.push({ id: Date.now(), text, done: false })
+  newTodo.value = ''
+}
+
+function removeTodo(id${language === 'ts' ? ': number' : ''}) {
+  todos.value = todos.value.filter((todo) => todo.id !== id)
 }
 </script>
 
 <template>
   <main class="renderizer-demo">
     <section class="hero">
-      <p class="eyebrow">Renderizer</p>
-      <h1>One Vue runtime. Multiple native windows.</h1>
-      <p>
-        Open a native Electron window rendered by the same Vue app, then toggle the theme
-        to see document styles sync live.
-      </p>
+      <div class="brand-lockup" aria-label="Renderizer plus Vue">
+        <span class="brand-mark brand-mark--renderizer" v-html="RenderizerLogo" />
+        <span class="brand-plus">+</span>
+        <span class="brand-mark brand-mark--vue" v-html="VueLogo" />
+      </div>
+      <h1>Render Vue interfaces across native Electron windows.</h1>
       <div class="actions">
-        <button type="button" @click="open = true">Open Inspector</button>
+        <button type="button" @click="open = true">Open Todo Window</button>
         <button type="button" class="secondary" @click="toggleTheme">Toggle Theme</button>
       </div>
+      <p class="status">{{ remainingTodos }} tasks left in shared memory</p>
     </section>
   </main>
 
   <RenderWindow
     v-model:open="open"
-    window-id="renderizer-inspector"
-    config-id="inspector"
+    window-id="renderizer-todos"
+    config-id="todos"
     fallback="none"
   >
-    <section class="inspector">
-      <header>
-        <span>Render Window</span>
-        <strong>{{ theme }} theme</strong>
-      </header>
-      <div class="inspector-grid">
-        <article>
-          <span>Runtime</span>
-          <strong>Shared Vue tree</strong>
-        </article>
-        <article>
-          <span>Document</span>
-          <strong>Native Electron window</strong>
-        </article>
-        <article>
-          <span>Theme sync</span>
-          <strong>Live</strong>
-        </article>
+    <section class="todo-window">
+      <div class="todo-header">
+        <span>Renderizer Todos</span>
+        <strong>{{ remainingTodos }} left</strong>
       </div>
+      <form class="todo-form" @submit.prevent="addTodo">
+        <input v-model="newTodo" placeholder="Add a task shared by both windows" />
+        <button type="submit">Add</button>
+      </form>
+      <ul class="todo-list">
+        <li v-for="todo in todos" :key="todo.id" class="todo-card" :class="{ 'is-done': todo.done }">
+          <label>
+            <input v-model="todo.done" type="checkbox" />
+            <span>{{ todo.text }}</span>
+          </label>
+          <button type="button" class="icon-button" @click="removeTodo(todo.id)">Remove</button>
+        </li>
+      </ul>
     </section>
   </RenderWindow>
 </template>
@@ -193,45 +238,58 @@ function toggleTheme() {
 
 function vueStyleSource(): string {
   return `:root {
-  color: #e8edf5;
-  background: #10141c;
+  color: #262422;
+  background: #FEF9F4;
   font-family: "Aptos", "Segoe UI", sans-serif;
+  color-scheme: light;
 }
 
-:root[data-theme="light"] {
-  color: #18202d;
-  background: #f4f7fb;
+:root[data-theme="dark"] {
+  color: #FEF9F4;
+  background: #262422;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    linear-gradient(135deg, rgba(45, 180, 145, 0.18), transparent 32rem),
-    linear-gradient(315deg, rgba(80, 120, 255, 0.14), transparent 28rem),
-    var(--page-bg, #10141c);
+  background: #FEF9F4;
   color: inherit;
 }
 
-:root[data-theme="light"] body {
-  --page-bg: #f4f7fb;
+:root[data-theme="dark"] body {
+  background: #262422;
 }
 
 button {
-  height: 40px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  background: #39d39f;
-  color: #07120f;
-  font-weight: 700;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid #262422;
+  border-radius: 0;
+  background: #262422;
+  color: #FEF9F4;
+  font: inherit;
+  font-weight: 800;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme="dark"] button {
+  border-color: #FEF9F4;
+  background: #FEF9F4;
+  color: #262422;
 }
 
 button.secondary {
   background: transparent;
-  color: inherit;
+  color: #262422;
+}
+
+:root[data-theme="dark"] button.secondary {
+  background: transparent;
+  color: #FEF9F4;
 }
 
 .renderizer-demo {
@@ -242,81 +300,171 @@ button.secondary {
 }
 
 .hero {
-  width: min(760px, 100%);
+  display: grid;
+  gap: 28px;
+  width: min(860px, 100%);
 }
 
-.eyebrow {
-  margin: 0 0 12px;
-  color: #39d39f;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 4vw, 34px);
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: clamp(92px, 18vw, 164px);
+  aspect-ratio: 1;
+}
+
+.brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brand-mark--renderizer svg path {
+  fill: #262422;
+}
+
+:root[data-theme="dark"] .brand-mark--renderizer svg path {
+  fill: #FEF9F4;
+}
+
+.brand-plus {
+  font-size: clamp(42px, 8vw, 84px);
+  font-weight: 900;
+  line-height: 1;
 }
 
 h1 {
   margin: 0;
-  max-width: 680px;
-  font-size: clamp(42px, 8vw, 82px);
+  max-width: 780px;
+  font-size: clamp(44px, 8vw, 88px);
   line-height: 0.96;
-}
-
-.hero p:not(.eyebrow) {
-  max-width: 620px;
-  color: color-mix(in srgb, currentColor 72%, transparent);
-  font-size: 18px;
-  line-height: 1.65;
+  letter-spacing: -0.06em;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 28px;
 }
 
-.inspector {
+.status {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.todo-window {
   display: grid;
-  gap: 18px;
+  grid-template-rows: auto auto 1fr;
+  gap: 16px;
   width: 100vw;
   height: 100vh;
   box-sizing: border-box;
-  padding: 28px;
+  padding: 24px;
   background: inherit;
   color: inherit;
 }
 
-.inspector header,
-.inspector article {
-  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, currentColor 6%, transparent);
+.todo-header,
+.todo-form,
+.todo-card {
+  border: 1px solid currentColor;
+  background: transparent;
 }
 
-.inspector header {
+.todo-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
+  min-height: 64px;
+  padding: 0 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.todo-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+.todo-form input {
+  min-width: 0;
+  border: 0;
+  border-right: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
   padding: 0 18px;
+  font: inherit;
+  outline: none;
 }
 
-.inspector-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+.todo-form input::placeholder {
+  color: color-mix(in srgb, currentColor 52%, transparent);
 }
 
-.inspector article {
+.todo-list {
   display: grid;
-  gap: 8px;
+  gap: 12px;
   align-content: start;
-  padding: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
 }
 
-.inspector span {
-  color: color-mix(in srgb, currentColor 62%, transparent);
-  font-size: 13px;
+.todo-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 0 14px 0 18px;
+}
+
+.todo-card label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-weight: 800;
+}
+
+.todo-card input {
+  width: 18px;
+  height: 18px;
+  accent-color: currentColor;
+}
+
+.todo-card.is-done span {
+  text-decoration: line-through;
+  opacity: 0.58;
+}
+
+.icon-button {
+  min-height: 36px;
+  padding: 0 10px;
+  background: transparent;
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .todo-form {
+    grid-template-columns: 1fr;
+  }
+
+  .todo-form input {
+    min-height: 48px;
+    border-right: 0;
+    border-bottom: 1px solid currentColor;
+  }
 }
 `
 }
@@ -446,7 +594,7 @@ function packageJsonSource(projectName: string, language: ScriptLanguage): strin
       'type-check': language === 'ts' ? 'vue-tsc --noEmit && tsc -p tsconfig.electron.json --noEmit' : 'vite build',
     },
     dependencies: {
-      '@renderizer/vue': '^0.1.0-alpha.2',
+      '@renderizer/vue': '^0.1.0-alpha.4',
       '@vitejs/plugin-vue': '^6.0.1',
       vite: '^7.0.6',
       vue: '^3.5.18',
@@ -527,6 +675,11 @@ function vueShimSource(): string {
   const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>
   export default component
 }
+
+declare module '*.svg?raw' {
+  const content: string
+  export default content
+}
 `
 }
 
@@ -536,6 +689,7 @@ async function createTemplateProject(projectRoot: string, language: ScriptLangua
 
   s.start('Writing Renderizer template')
   await mkdir(path.join(projectRoot, 'src'), { recursive: true })
+  await mkdir(path.join(projectRoot, 'src', 'assets'), { recursive: true })
   await mkdir(path.join(projectRoot, 'electron'), { recursive: true })
   await writeFile(path.join(projectRoot, 'package.json'), packageJsonSource(projectName, language), 'utf8')
   await writeFile(path.join(projectRoot, 'index.html'), indexHtmlSource(projectName, language), 'utf8')
@@ -557,6 +711,8 @@ async function createTemplateProject(projectRoot: string, language: ScriptLangua
   await writeFile(path.join(projectRoot, 'src', `main.${language}`), vueMainSource(language), 'utf8')
   await writeFile(path.join(projectRoot, 'src', 'App.vue'), vueAppSource(language), 'utf8')
   await writeFile(path.join(projectRoot, 'src', 'style.css'), vueStyleSource(), 'utf8')
+  await writeFile(path.join(projectRoot, 'src', 'assets', 'renderizer_logo.svg'), renderizerLogoSvg, 'utf8')
+  await writeFile(path.join(projectRoot, 'src', 'assets', 'vue-js.svg'), vueLogoSvg, 'utf8')
   if (language === 'ts') {
     await writeFile(path.join(projectRoot, 'tsconfig.electron.json'), electronTsConfigSource(), 'utf8')
     await writeFile(path.join(projectRoot, 'tsconfig.json'), tsConfigSource(), 'utf8')
