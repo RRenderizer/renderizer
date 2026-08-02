@@ -1,6 +1,6 @@
 {
   "name": "@renderizer/create",
-  "version": "0.1.0-alpha.9",
+  "version": "0.1.0-alpha.10",
   "description": "Interactive CLI for adding Renderizer to an existing project.",
   "type": "module",
   "bin": {

@@ -365,6 +365,7 @@ function createMainWindow()${functionReturn} {
       preload: path.join(__dirname, 'preload.${language === 'ts' ? 'js' : 'js'}'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   })
 
