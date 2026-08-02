@@ -7,4 +7,4 @@ export {
   type WindowSurface,
   type WindowSurfaceController,
   type WindowSurfaceSyncOptions,
-} from './window-surface'
+} from './window-surface.js'

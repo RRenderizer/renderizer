@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import { createWindowSurface, type WindowFeatureOptions, type WindowSurfaceController } from '@renderizer/core'
-import './types'
+import './types.js'
 
 export interface RenderizerBridge {
   isRenderizerHost: boolean

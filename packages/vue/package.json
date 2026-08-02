@@ -1,6 +1,6 @@
 {
   "name": "@renderizer/vue",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Vue adapter for Renderizer multi-window surfaces.",
   "type": "module",
   "main": "./dist/index.js",
@@ -57,7 +57,7 @@
     }
   },
   "dependencies": {
-    "@renderizer/core": "0.1.0-alpha.0"
+    "@renderizer/core": "^0.1.0-alpha.1"
   },
   "devDependencies": {
     "electron": "^37.3.1",

@@ -3,7 +3,7 @@ import type { BrowserWindowConstructorOptions } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RenderWindowManager } from '@renderizer/vue/electron'
-import renderizerConfig from '../renderizer.config'
+import renderizerConfig from '../renderizer.config.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rendererUrl = process.env.RENDERIZER_EXAMPLE_URL ?? 'http://127.0.0.1:5173'
