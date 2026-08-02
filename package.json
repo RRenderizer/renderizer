@@ -1,0 +1,29 @@
+{
+  "name": "renderizer",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "description": "Framework adapters for lightweight multi-window Electron apps powered by one UI runtime.",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "pack:check": "npm pack --workspace @renderizer/core --dry-run && npm pack --workspace @renderizer/vue --dry-run && npm pack --workspace @renderizer/create --dry-run"
+  },
+  "keywords": [
+    "electron",
+    "vue",
+    "teleport",
+    "multi-window",
+    "desktop"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

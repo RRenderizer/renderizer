@@ -1,0 +1,53 @@
+{
+  "name": "@renderizer/vue",
+  "version": "0.1.0-alpha.0",
+  "description": "Vue adapter for Renderizer multi-window surfaces.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./electron": {
+      "types": "./dist/electron.d.ts",
+      "import": "./dist/electron.js"
+    },
+    "./preload": {
+      "types": "./dist/preload.d.ts",
+      "import": "./dist/preload.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "vue",
+    "teleport",
+    "electron",
+    "multi-window"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "electron": ">=28",
+    "vue": ">=3.4"
+  },
+  "peerDependenciesMeta": {
+    "electron": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@renderizer/core": "0.1.0-alpha.0"
+  },
+  "devDependencies": {
+    "electron": "^37.3.1",
+    "typescript": "^5.9.2",
+    "vue": "^3.5.18"
+  }
+}

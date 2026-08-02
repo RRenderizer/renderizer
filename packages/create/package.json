@@ -1,0 +1,37 @@
+{
+  "name": "@renderizer/create",
+  "version": "0.1.0-alpha.0",
+  "description": "Interactive CLI for adding Renderizer to an existing project.",
+  "type": "module",
+  "bin": {
+    "create-renderizer": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "renderizer",
+    "create",
+    "cli",
+    "electron"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "typescript": "^5.9.2"
+  }
+}
