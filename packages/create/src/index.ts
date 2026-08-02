@@ -28,6 +28,14 @@ function installArgs(packageManager: PackageManager, packageName: string): strin
   return ['install', packageName]
 }
 
+function resolveProjectRoot(input: string, cwd: string): string {
+  const normalizedInput = input.trim()
+  if (!normalizedInput || normalizedInput === '.' || normalizedInput === './' || normalizedInput === '/') {
+    return cwd
+  }
+  return path.resolve(cwd, normalizedInput)
+}
+
 function run(command: string, args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -88,18 +96,18 @@ async function main(): Promise<void> {
   const defaultRoot = process.cwd()
   const projectRootInput = cancelIfNeeded(await text({
     message: 'Where is your project root?',
-    placeholder: defaultRoot,
-    defaultValue: defaultRoot,
+    placeholder: '.',
+    defaultValue: '.',
   }))
-  const projectRoot = path.resolve(String(projectRootInput || defaultRoot))
+  const projectRoot = resolveProjectRoot(String(projectRootInput), defaultRoot)
   const packageName = await readPackageName(projectRoot)
 
   const adapter = cancelIfNeeded(await select<Adapter>({
     message: packageName ? `Add Renderizer to ${packageName} using which adapter?` : 'Which adapter should Renderizer install?',
     options: [
       { value: 'vue', label: '@renderizer/vue', hint: 'Vue Teleport adapter' },
-      { value: 'js', label: '@renderizer/js', hint: 'planned vanilla DOM adapter' },
-      { value: 'react', label: '@renderizer/react', hint: 'planned React portal adapter' },
+      { value: 'js', label: '@renderizer/js', hint: 'coming soon' },
+      { value: 'react', label: '@renderizer/react', hint: 'coming soon' },
     ],
   }))
 
@@ -112,12 +120,10 @@ async function main(): Promise<void> {
   }))
 
   const adapterPackage = adapterPackages[adapter]
-  const shouldInstall = adapterPackage
-    ? cancelIfNeeded(await confirm({
-        message: `Install ${adapterPackage} now?`,
-        initialValue: true,
-      }))
-    : false
+  if (!adapterPackage) {
+    cancel(`@renderizer/${adapter} is not published yet. Choose Vue for the current alpha.`)
+    process.exit(1)
+  }
 
   const configPath = path.join(projectRoot, `renderizer.config.${configFormat}`)
   if (existsSync(configPath)) {
@@ -137,14 +143,10 @@ async function main(): Promise<void> {
   await writeFile(configPath, configSource(adapter), 'utf8')
   s.stop(`Created ${path.basename(configPath)}`)
 
-  if (shouldInstall) {
-    const packageManager = resolvePackageManager()
-    const installPackage = adapterPackage
-    if (!installPackage) return
-    s.start(`Installing ${installPackage}`)
-    await run(packageManager, installArgs(packageManager, installPackage), projectRoot)
-    s.stop(`Installed ${installPackage}`)
-  }
+  const packageManager = resolvePackageManager()
+  s.start(`Installing ${adapterPackage}`)
+  await run(packageManager, installArgs(packageManager, adapterPackage), projectRoot)
+  s.stop(`Installed ${adapterPackage}`)
 
   outro('Renderizer is ready.')
 }
