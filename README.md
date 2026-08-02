@@ -1,3 +1,5 @@
+<img width="1546" height="423" alt="renderizer_banner" src="https://github.com/user-attachments/assets/919b6722-a24c-4317-9895-4138e45bb470" />
+
 # Renderizer
 
 Renderizer is a small framework for building lightweight multi-window Electron apps without booting a second frontend app per window.
