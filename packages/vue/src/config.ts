@@ -1,32 +1,26 @@
 import type { WindowFeatureOptions } from '@renderizer/core'
 
-export interface RenderWindowPreset {
+export interface RenderWindowPreset extends WindowFeatureOptions {
   id: string
   title?: string
-  features?: WindowFeatureOptions
-  electron?: {
-    width?: number
-    height?: number
-    minWidth?: number
-    minHeight?: number
-    maxWidth?: number
-    maxHeight?: number
-    x?: number
-    y?: number
-    center?: boolean
-    resizable?: boolean
-    movable?: boolean
-    minimizable?: boolean
-    maximizable?: boolean
-    closable?: boolean
-    alwaysOnTop?: boolean
-    fullscreen?: boolean
-    maximized?: boolean
-    frame?: boolean
-    transparent?: boolean
-    backgroundColor?: string
-    titleBarStyle?: 'default' | 'hidden' | 'hiddenInset' | 'customButtonsOnHover'
-  }
+  minWidth?: number
+  minHeight?: number
+  maxWidth?: number
+  maxHeight?: number
+  x?: number
+  y?: number
+  center?: boolean
+  movable?: boolean
+  minimizable?: boolean
+  maximizable?: boolean
+  closable?: boolean
+  alwaysOnTop?: boolean
+  fullscreen?: boolean
+  maximized?: boolean
+  frame?: boolean
+  transparent?: boolean
+  backgroundColor?: string
+  titleBarStyle?: 'default' | 'hidden' | 'hiddenInset' | 'customButtonsOnHover'
 }
 
 export interface RenderizerConfig {
@@ -36,7 +30,7 @@ export interface RenderizerConfig {
     electron?: string
   }
   windows?: {
-    defaultFeatures?: WindowFeatureOptions
+    default?: Omit<RenderWindowPreset, 'id'>
     presets?: RenderWindowPreset[]
   }
 }

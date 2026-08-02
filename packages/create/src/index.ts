@@ -85,7 +85,7 @@ export default defineRenderizerConfig({
     electron: '${paths.electron}',
   },
   windows: {
-    defaultFeatures: {
+    default: {
       width: 1180,
       height: 780,
       popup: true,
@@ -94,17 +94,13 @@ export default defineRenderizerConfig({
       {
         id: 'inspector',
         title: 'Inspector',
-        features: {
-          width: 1200,
-          height: 760,
-          popup: true,
-        },
-        electron: {
-          minWidth: 720,
-          minHeight: 480,
-          frame: false,
-          backgroundColor: '#111318',
-        },
+        width: 1200,
+        height: 760,
+        popup: true,
+        minWidth: 720,
+        minHeight: 480,
+        frame: false,
+        backgroundColor: '#111318',
       },
     ],
   },

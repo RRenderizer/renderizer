@@ -2,7 +2,21 @@ import { Teleport, computed, defineComponent, h, ref, toRef, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { WindowFeatureOptions } from '@renderizer/core'
 import { useRenderWindow, type RenderizerBridge, type UseRenderWindowOptions } from './useRenderWindow'
-import { resolveRenderWindowPreset } from './config'
+import { getRenderizerConfig, resolveRenderWindowPreset } from './config'
+
+const windowOpenFeatureKeys = ['width', 'height', 'left', 'top', 'popup', 'resizable'] as const
+
+function pickWindowOpenFeatures(source: Partial<WindowFeatureOptions> | undefined): WindowFeatureOptions {
+  const features: WindowFeatureOptions = {}
+  if (!source) return features
+  for (const key of windowOpenFeatureKeys) {
+    const value = source[key]
+    if (value !== undefined) {
+      ;(features as Record<string, unknown>)[key] = value
+    }
+  }
+  return features
+}
 
 export default defineComponent({
   name: 'RenderWindow',
@@ -30,14 +44,16 @@ export default defineComponent({
     const externalOpenFailed = ref(false)
     const openRef = toRef(props, 'open')
     const preset = computed(() => props.configId ? resolveRenderWindowPreset(props.configId) : undefined)
+    const defaultWindow = computed(() => getRenderizerConfig()?.windows?.default)
     const title = computed(() => props.title || preset.value?.title || props.windowId)
     const featureOptions = computed<WindowFeatureOptions>(() => {
       const features: WindowFeatureOptions = {
-        ...preset.value?.features,
+        ...pickWindowOpenFeatures(defaultWindow.value),
+        ...pickWindowOpenFeatures(preset.value),
         ...props.features,
       }
-      const width = props.width ?? props.features.width ?? preset.value?.features?.width
-      const height = props.height ?? props.features.height ?? preset.value?.features?.height
+      const width = props.width ?? props.features.width ?? preset.value?.width ?? defaultWindow.value?.width
+      const height = props.height ?? props.features.height ?? preset.value?.height ?? defaultWindow.value?.height
       if (width !== undefined) features.width = width
       if (height !== undefined) features.height = height
       return features
