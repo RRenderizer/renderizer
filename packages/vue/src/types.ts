@@ -1,8 +1,8 @@
-import type { TeleportWindowBridge } from './useTeleportWindow'
+import type { RenderizerBridge } from './useRenderWindow'
 
 declare global {
   interface Window {
-    renderizer?: TeleportWindowBridge
+    renderizer?: RenderizerBridge
   }
 }
 

@@ -2,8 +2,8 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue
 import { createWindowSurface, type WindowFeatureOptions, type WindowSurfaceController } from '@renderizer/core'
 import './types'
 
-export interface TeleportWindowBridge {
-  isTeleportWindowHost: boolean
+export interface RenderizerBridge {
+  isRenderizerHost: boolean
   ready: (windowId: string) => Promise<void>
   control: (windowId: string, action: 'minimize' | 'toggle-maximize' | 'close' | 'focus') => Promise<void>
   getState: (windowId: string) => Promise<{ isMaximized: boolean; isFullScreen: boolean }>
@@ -13,12 +13,12 @@ export interface TeleportWindowBridge {
   onClosed: (callback: (state: { windowId: string }) => void) => () => void
 }
 
-export interface UseTeleportWindowOptions {
+export interface UseRenderWindowOptions {
   windowId: Ref<string> | string
   title: Ref<string> | string
   open: Ref<boolean>
   features?: Ref<WindowFeatureOptions> | WindowFeatureOptions
-  bridge?: TeleportWindowBridge
+  bridge?: RenderizerBridge
   bridgeName?: string
   enabled?: Ref<boolean> | boolean
   framePrefix?: string
@@ -27,7 +27,7 @@ export interface UseTeleportWindowOptions {
   onOpenFailed?: () => void
 }
 
-export interface UseTeleportWindowReturn {
+export interface UseRenderWindowReturn {
   target: Ref<HTMLElement | null>
   isMaximized: Ref<boolean>
   isExternal: Ref<boolean>
@@ -40,20 +40,20 @@ function valueOf<T>(source: Ref<T> | T): T {
   return typeof source === 'object' && source !== null && 'value' in source ? source.value : source
 }
 
-function resolveBridge(options: UseTeleportWindowOptions): TeleportWindowBridge | undefined {
+function resolveBridge(options: UseRenderWindowOptions): RenderizerBridge | undefined {
   if (options.bridge) return options.bridge
   const bridgeName = options.bridgeName ?? 'renderizer'
-  return (window as unknown as Record<string, TeleportWindowBridge | undefined>)[bridgeName]
+  return (window as unknown as Record<string, RenderizerBridge | undefined>)[bridgeName]
 }
 
-export function useTeleportWindow(options: UseTeleportWindowOptions): UseTeleportWindowReturn {
+export function useRenderWindow(options: UseRenderWindowOptions): UseRenderWindowReturn {
   const controller = shallowRef<WindowSurfaceController | null>(null)
   const target = ref<HTMLElement | null>(null)
   const isMaximized = ref(false)
   const bridge = computed(() => resolveBridge(options))
   const isExternal = computed(() => {
     const enabled = options.enabled === undefined ? true : valueOf(options.enabled)
-    return enabled && bridge.value?.isTeleportWindowHost === true
+    return enabled && bridge.value?.isRenderizerHost === true
   })
   let removeStateListener: (() => void) | undefined
   let removeClosedListener: (() => void) | undefined
@@ -147,3 +147,8 @@ export function useTeleportWindow(options: UseTeleportWindowOptions): UseTelepor
     control,
   }
 }
+
+export type TeleportWindowBridge = RenderizerBridge
+export type UseTeleportWindowOptions = UseRenderWindowOptions
+export type UseTeleportWindowReturn = UseRenderWindowReturn
+export const useTeleportWindow = useRenderWindow

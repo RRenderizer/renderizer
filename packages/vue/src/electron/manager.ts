@@ -1,14 +1,14 @@
 import { BrowserWindow } from 'electron'
 import type { BrowserWindowConstructorOptions, IpcMainInvokeEvent, NativeImage, WebContents } from 'electron'
 
-export interface TeleportWindowState {
+export interface RenderWindowState {
   isMaximized: boolean
   isFullScreen: boolean
 }
 
-export type TeleportWindowAction = 'minimize' | 'toggle-maximize' | 'close' | 'focus'
+export type RenderWindowAction = 'minimize' | 'toggle-maximize' | 'close' | 'focus'
 
-export interface TeleportWindowManagerOptions {
+export interface RenderWindowManagerOptions {
   preloadPath: string
   appId?: string
   icon?: NativeImage
@@ -20,33 +20,33 @@ export interface TeleportWindowManagerOptions {
 const defaultFramePrefix = 'renderizer'
 const windowIdPattern = /^[a-z0-9][a-z0-9:_-]{0,127}$/
 
-export function createTeleportWindowFrameName(windowId: string, framePrefix = defaultFramePrefix): string {
+export function createRenderWindowFrameName(windowId: string, framePrefix = defaultFramePrefix): string {
   if (!windowIdPattern.test(windowId)) {
-    throw new Error(`Invalid teleport window id: ${windowId}`)
+    throw new Error(`Invalid render window id: ${windowId}`)
   }
   return `${framePrefix}:${windowId}`
 }
 
-export function parseTeleportWindowFrameName(frameName: string, framePrefix = defaultFramePrefix): string | null {
+export function parseRenderWindowFrameName(frameName: string, framePrefix = defaultFramePrefix): string | null {
   const prefix = `${framePrefix}:`
   if (!frameName.startsWith(prefix)) return null
   const windowId = frameName.slice(prefix.length)
   return windowIdPattern.test(windowId) ? windowId : null
 }
 
-export class TeleportWindowManager {
+export class RenderWindowManager {
   private readonly windows = new Map<string, BrowserWindow>()
   private opener: WebContents | null = null
   private readonly framePrefix: string
 
-  constructor(private readonly options: TeleportWindowManagerOptions) {
+  constructor(private readonly options: RenderWindowManagerOptions) {
     this.framePrefix = options.framePrefix ?? defaultFramePrefix
   }
 
   attachTo(opener: BrowserWindow): void {
     this.opener = opener.webContents
     opener.webContents.setWindowOpenHandler(({ url, frameName }) => {
-      const windowId = parseTeleportWindowFrameName(frameName, this.framePrefix)
+      const windowId = parseRenderWindowFrameName(frameName, this.framePrefix)
       if (url !== 'about:blank' || !windowId) {
         if ((url.startsWith('https://') || url.startsWith('http://')) && this.options.openExternal) {
           void this.options.openExternal(url)
@@ -80,7 +80,7 @@ export class TeleportWindowManager {
     })
 
     opener.webContents.on('did-create-window', (window, details) => {
-      const windowId = parseTeleportWindowFrameName(details.frameName, this.framePrefix)
+      const windowId = parseRenderWindowFrameName(details.frameName, this.framePrefix)
       if (!windowId) {
         window.destroy()
         return
@@ -95,7 +95,7 @@ export class TeleportWindowManager {
     window?.focus()
   }
 
-  control(event: IpcMainInvokeEvent, windowId: string, action: TeleportWindowAction): void {
+  control(event: IpcMainInvokeEvent, windowId: string, action: RenderWindowAction): void {
     const window = this.resolveOwnedWindow(event, windowId)
     if (!window) return
 
@@ -108,7 +108,7 @@ export class TeleportWindowManager {
     if (action === 'close') window.close()
   }
 
-  getState(event: IpcMainInvokeEvent, windowId: string): TeleportWindowState {
+  getState(event: IpcMainInvokeEvent, windowId: string): RenderWindowState {
     return this.readState(this.resolveOwnedWindow(event, windowId))
   }
 
@@ -151,10 +151,17 @@ export class TeleportWindowManager {
     return window && !window.isDestroyed() ? window : null
   }
 
-  private readState(window: BrowserWindow | null | undefined): TeleportWindowState {
+  private readState(window: BrowserWindow | null | undefined): RenderWindowState {
     return {
       isMaximized: window?.isMaximized() ?? false,
       isFullScreen: window?.isFullScreen() ?? false,
     }
   }
 }
+
+export type TeleportWindowState = RenderWindowState
+export type TeleportWindowAction = RenderWindowAction
+export type TeleportWindowManagerOptions = RenderWindowManagerOptions
+export const createTeleportWindowFrameName = createRenderWindowFrameName
+export const parseTeleportWindowFrameName = parseRenderWindowFrameName
+export const TeleportWindowManager = RenderWindowManager

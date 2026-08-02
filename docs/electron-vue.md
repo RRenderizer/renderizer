@@ -4,10 +4,10 @@
 
 ```ts
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
-import { TeleportWindowManager } from '@renderizer/vue/electron'
+import { RenderWindowManager } from '@renderizer/vue/electron'
 
 let mainWindow: BrowserWindow
-let windows: TeleportWindowManager
+let windows: RenderWindowManager
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -18,7 +18,7 @@ function createMainWindow() {
     },
   })
 
-  windows = new TeleportWindowManager({
+  windows = new RenderWindowManager({
     preloadPath: '/absolute/path/to/preload.js',
     appId: 'com.example.app',
     openExternal: (url) => shell.openExternal(url),
@@ -48,9 +48,9 @@ app.on('before-quit', () => windows?.closeAll())
 ## Preload
 
 ```ts
-import { exposeTeleportWindowBridge } from '@renderizer/vue/preload'
+import { exposeRenderizerBridge } from '@renderizer/vue/preload'
 
-exposeTeleportWindowBridge()
+exposeRenderizerBridge()
 ```
 
 ## Vue
@@ -58,7 +58,7 @@ exposeTeleportWindowBridge()
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { TeleportWindow } from '@renderizer/vue'
+import { RenderWindow } from '@renderizer/vue'
 
 const open = ref(false)
 </script>
@@ -66,7 +66,7 @@ const open = ref(false)
 <template>
   <button @click="open = true">Open Inspector</button>
 
-  <TeleportWindow
+  <RenderWindow
     v-model:open="open"
     window-id="inspector"
     title="Inspector"
@@ -85,7 +85,7 @@ const open = ref(false)
         Your real Vue component tree goes here.
       </main>
     </template>
-  </TeleportWindow>
+  </RenderWindow>
 </template>
 ```
 

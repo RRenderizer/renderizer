@@ -22,11 +22,11 @@ Renderizer keeps the app state in one runtime and treats native windows as extra
 
 ```vue
 <script setup lang="ts">
-import { TeleportWindow } from '@renderizer/vue'
+import { RenderWindow } from '@renderizer/vue'
 </script>
 
 <template>
-  <TeleportWindow
+  <RenderWindow
     v-model:open="open"
     window-id="inspector"
     title="Inspector"
@@ -34,7 +34,7 @@ import { TeleportWindow } from '@renderizer/vue'
     :height="760"
   >
     <InspectorPanel />
-  </TeleportWindow>
+  </RenderWindow>
 </template>
 ```
 

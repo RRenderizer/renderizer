@@ -1,10 +1,10 @@
 import { Teleport, computed, defineComponent, h, ref, toRef, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { WindowFeatureOptions } from '@renderizer/core'
-import { useTeleportWindow, type TeleportWindowBridge, type UseTeleportWindowOptions } from './useTeleportWindow'
+import { useRenderWindow, type RenderizerBridge, type UseRenderWindowOptions } from './useRenderWindow'
 
 export default defineComponent({
-  name: 'TeleportWindow',
+  name: 'RenderWindow',
   props: {
     open: { type: Boolean, required: true },
     windowId: { type: String, required: true },
@@ -13,7 +13,7 @@ export default defineComponent({
     width: { type: Number, default: undefined },
     height: { type: Number, default: undefined },
     enabled: { type: Boolean, default: true },
-    bridge: { type: Object as PropType<TeleportWindowBridge>, default: undefined },
+    bridge: { type: Object as PropType<RenderizerBridge>, default: undefined },
     bridgeName: { type: String, default: 'renderizer' },
     framePrefix: { type: String, default: undefined },
     fallback: { type: String as PropType<'render' | 'none'>, default: 'render' },
@@ -33,7 +33,7 @@ export default defineComponent({
       ...(props.height ?? props.features.height ? { height: props.height ?? props.features.height } : {}),
     }))
     const enabled = computed(() => props.enabled && !externalOpenFailed.value)
-    const windowSurfaceOptions: UseTeleportWindowOptions = {
+    const windowSurfaceOptions: UseRenderWindowOptions = {
       windowId: toRef(props, 'windowId'),
       title: toRef(props, 'title'),
       open: openRef,
@@ -52,7 +52,7 @@ export default defineComponent({
       ...(props.bridge ? { bridge: props.bridge } : {}),
       ...(props.framePrefix ? { framePrefix: props.framePrefix } : {}),
     }
-    const windowSurface = useTeleportWindow(windowSurfaceOptions)
+    const windowSurface = useRenderWindow(windowSurfaceOptions)
 
     watch(openRef, (open) => {
       if (!open) externalOpenFailed.value = false

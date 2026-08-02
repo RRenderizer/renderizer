@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-export interface TeleportWindowBridge {
-  isTeleportWindowHost: boolean
+export interface RenderizerBridge {
+  isRenderizerHost: boolean
   ready: (windowId: string) => Promise<void>
   control: (windowId: string, action: 'minimize' | 'toggle-maximize' | 'close' | 'focus') => Promise<void>
   getState: (windowId: string) => Promise<{ isMaximized: boolean; isFullScreen: boolean }>
@@ -11,9 +11,9 @@ export interface TeleportWindowBridge {
   onClosed: (callback: (state: { windowId: string }) => void) => () => void
 }
 
-export function exposeTeleportWindowBridge(globalName = 'renderizer'): void {
-  const bridge: TeleportWindowBridge = {
-    isTeleportWindowHost: true,
+export function exposeRenderizerBridge(globalName = 'renderizer'): void {
+  const bridge: RenderizerBridge = {
+    isRenderizerHost: true,
     ready: (windowId) => ipcRenderer.invoke('renderizer-window-ready', windowId),
     control: (windowId, action) => ipcRenderer.invoke('renderizer-window-control', windowId, action),
     getState: (windowId) => ipcRenderer.invoke('renderizer-window-state', windowId),
@@ -34,3 +34,6 @@ export function exposeTeleportWindowBridge(globalName = 'renderizer'): void {
 
   contextBridge.exposeInMainWorld(globalName, bridge)
 }
+
+export type TeleportWindowBridge = RenderizerBridge
+export const exposeTeleportWindowBridge = exposeRenderizerBridge
