@@ -93,6 +93,7 @@ export default defineComponent({
           control: windowSurface.control,
         }))
       }
+      if (windowSurface.isExternal.value) return null
       if (props.fallback === 'none') return null
       return slots.default?.({
         document: document,

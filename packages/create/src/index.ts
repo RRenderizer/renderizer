@@ -164,6 +164,7 @@ function toggleTheme() {
     v-model:open="open"
     window-id="renderizer-inspector"
     config-id="inspector"
+    fallback="none"
   >
     <section class="inspector">
       <header>
