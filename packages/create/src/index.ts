@@ -36,6 +36,11 @@ function resolveProjectRoot(input: string, cwd: string): string {
   return path.resolve(cwd, normalizedInput)
 }
 
+function relativePath(from: string, to: string): string {
+  const relative = path.relative(from, to).replaceAll(path.sep, '/')
+  return relative ? `./${relative}` : '.'
+}
+
 function run(command: string, args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -70,11 +75,15 @@ async function readPackageName(projectRoot: string): Promise<string | null> {
   }
 }
 
-function configSource(adapter: Adapter): string {
+function configSource(adapter: Adapter, paths: { renderer: string; electron: string }): string {
   return `import { defineRenderizerConfig } from '@renderizer/${adapter}'
 
 export default defineRenderizerConfig({
   adapter: '${adapter}',
+  paths: {
+    renderer: '${paths.renderer}',
+    electron: '${paths.electron}',
+  },
   electron: {
     bridgeName: 'renderizer',
     framePrefix: 'renderizer',
@@ -111,6 +120,20 @@ async function main(): Promise<void> {
     ],
   }))
 
+  const rendererRootInput = cancelIfNeeded(await text({
+    message: 'Where is your renderer app?',
+    placeholder: '.',
+    defaultValue: '.',
+  }))
+  const rendererRoot = resolveProjectRoot(String(rendererRootInput), projectRoot)
+
+  const electronRootInput = cancelIfNeeded(await text({
+    message: 'Where is your Electron app?',
+    placeholder: '.',
+    defaultValue: '.',
+  }))
+  const electronRoot = resolveProjectRoot(String(electronRootInput), projectRoot)
+
   const configFormat = cancelIfNeeded(await select<ConfigFormat>({
     message: 'Create which config file?',
     options: [
@@ -140,13 +163,24 @@ async function main(): Promise<void> {
   const s = spinner()
   s.start('Writing Renderizer config')
   await mkdir(projectRoot, { recursive: true })
-  await writeFile(configPath, configSource(adapter), 'utf8')
+  await writeFile(configPath, configSource(adapter, {
+    renderer: relativePath(projectRoot, rendererRoot),
+    electron: relativePath(projectRoot, electronRoot),
+  }), 'utf8')
   s.stop(`Created ${path.basename(configPath)}`)
 
   const packageManager = resolvePackageManager()
-  s.start(`Installing ${adapterPackage}`)
-  await run(packageManager, installArgs(packageManager, adapterPackage), projectRoot)
-  s.stop(`Installed ${adapterPackage}`)
+  const installRoots = [...new Set([rendererRoot, electronRoot])]
+  for (const installRoot of installRoots) {
+    const packagePath = path.join(installRoot, 'package.json')
+    if (!existsSync(packagePath)) {
+      cancel(`No package.json found in ${installRoot}.`)
+      process.exit(1)
+    }
+    s.start(`Installing ${adapterPackage} in ${relativePath(projectRoot, installRoot)}`)
+    await run(packageManager, installArgs(packageManager, adapterPackage), installRoot)
+    s.stop(`Installed ${adapterPackage} in ${relativePath(projectRoot, installRoot)}`)
+  }
 
   outro('Renderizer is ready.')
 }

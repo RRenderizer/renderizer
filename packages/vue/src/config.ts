@@ -2,6 +2,10 @@ import type { WindowFeatureOptions } from '@renderizer/core'
 
 export interface RenderizerConfig {
   adapter: 'vue'
+  paths?: {
+    renderer?: string
+    electron?: string
+  }
   electron?: {
     bridgeName?: string
     framePrefix?: string
