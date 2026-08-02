@@ -147,8 +147,3 @@ export function useRenderWindow(options: UseRenderWindowOptions): UseRenderWindo
     control,
   }
 }
-
-export type TeleportWindowBridge = RenderizerBridge
-export type UseTeleportWindowOptions = UseRenderWindowOptions
-export type UseTeleportWindowReturn = UseRenderWindowReturn
-export const useTeleportWindow = useRenderWindow

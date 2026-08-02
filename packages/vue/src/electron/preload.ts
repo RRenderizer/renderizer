@@ -34,6 +34,3 @@ export function exposeRenderizerBridge(globalName = 'renderizer'): void {
 
   contextBridge.exposeInMainWorld(globalName, bridge)
 }
-
-export type TeleportWindowBridge = RenderizerBridge
-export const exposeTeleportWindowBridge = exposeRenderizerBridge

@@ -158,10 +158,3 @@ export class RenderWindowManager {
     }
   }
 }
-
-export type TeleportWindowState = RenderWindowState
-export type TeleportWindowAction = RenderWindowAction
-export type TeleportWindowManagerOptions = RenderWindowManagerOptions
-export const createTeleportWindowFrameName = createRenderWindowFrameName
-export const parseTeleportWindowFrameName = parseRenderWindowFrameName
-export const TeleportWindowManager = RenderWindowManager
