@@ -29,9 +29,7 @@ import { RenderWindow } from '@renderizer/vue'
   <RenderWindow
     v-model:open="open"
     window-id="inspector"
-    title="Inspector"
-    :width="1200"
-    :height="760"
+    config-id="inspector"
   >
     <InspectorPanel />
   </RenderWindow>

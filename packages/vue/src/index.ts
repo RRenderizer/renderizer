@@ -1,5 +1,12 @@
 export { default as RenderWindow } from './RenderWindow'
-export { defineRenderizerConfig, type RenderizerConfig } from './config'
+export {
+  defineRenderizerConfig,
+  getRenderizerConfig,
+  resolveRenderWindowPreset,
+  setRenderizerConfig,
+  type RenderizerConfig,
+  type RenderWindowPreset,
+} from './config'
 export {
   useRenderWindow,
   type RenderizerBridge,

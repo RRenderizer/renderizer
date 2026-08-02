@@ -84,16 +84,29 @@ export default defineRenderizerConfig({
     renderer: '${paths.renderer}',
     electron: '${paths.electron}',
   },
-  electron: {
-    bridgeName: 'renderizer',
-    framePrefix: 'renderizer',
-  },
   windows: {
     defaultFeatures: {
       width: 1180,
       height: 780,
       popup: true,
     },
+    presets: [
+      {
+        id: 'inspector',
+        title: 'Inspector',
+        features: {
+          width: 1200,
+          height: 760,
+          popup: true,
+        },
+        electron: {
+          minWidth: 720,
+          minHeight: 480,
+          frame: false,
+          backgroundColor: '#111318',
+        },
+      },
+    ],
   },
 })
 `

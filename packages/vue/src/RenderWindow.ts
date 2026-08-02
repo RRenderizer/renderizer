@@ -2,13 +2,15 @@ import { Teleport, computed, defineComponent, h, ref, toRef, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { WindowFeatureOptions } from '@renderizer/core'
 import { useRenderWindow, type RenderizerBridge, type UseRenderWindowOptions } from './useRenderWindow'
+import { resolveRenderWindowPreset } from './config'
 
 export default defineComponent({
   name: 'RenderWindow',
   props: {
     open: { type: Boolean, required: true },
     windowId: { type: String, required: true },
-    title: { type: String, required: true },
+    title: { type: String, default: '' },
+    configId: { type: String, default: '' },
     features: { type: Object as PropType<WindowFeatureOptions>, default: () => ({}) },
     width: { type: Number, default: undefined },
     height: { type: Number, default: undefined },
@@ -27,15 +29,23 @@ export default defineComponent({
   setup(props, { slots, emit }) {
     const externalOpenFailed = ref(false)
     const openRef = toRef(props, 'open')
-    const featureOptions = computed(() => ({
-      ...props.features,
-      ...(props.width ?? props.features.width ? { width: props.width ?? props.features.width } : {}),
-      ...(props.height ?? props.features.height ? { height: props.height ?? props.features.height } : {}),
-    }))
+    const preset = computed(() => props.configId ? resolveRenderWindowPreset(props.configId) : undefined)
+    const title = computed(() => props.title || preset.value?.title || props.windowId)
+    const featureOptions = computed<WindowFeatureOptions>(() => {
+      const features: WindowFeatureOptions = {
+        ...preset.value?.features,
+        ...props.features,
+      }
+      const width = props.width ?? props.features.width ?? preset.value?.features?.width
+      const height = props.height ?? props.features.height ?? preset.value?.features?.height
+      if (width !== undefined) features.width = width
+      if (height !== undefined) features.height = height
+      return features
+    })
     const enabled = computed(() => props.enabled && !externalOpenFailed.value)
     const windowSurfaceOptions: UseRenderWindowOptions = {
       windowId: toRef(props, 'windowId'),
-      title: toRef(props, 'title'),
+      title,
       open: openRef,
       features: featureOptions,
       bridgeName: props.bridgeName,
