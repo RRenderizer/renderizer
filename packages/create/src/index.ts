@@ -7,6 +7,8 @@ import { spawn } from 'node:child_process'
 
 type Adapter = 'js' | 'vue' | 'react'
 type ConfigFormat = 'ts' | 'js'
+type CliMode = 'existing' | 'template'
+type ScriptLanguage = 'ts' | 'js'
 type PackageManager = 'npm' | 'pnpm' | 'yarn'
 
 const adapterPackages: Record<Adapter, string | null> = {
@@ -26,6 +28,12 @@ function installArgs(packageManager: PackageManager, packageName: string): strin
   if (packageManager === 'pnpm') return ['add', packageName]
   if (packageManager === 'yarn') return ['add', packageName]
   return ['install', packageName]
+}
+
+function installDevArgs(packageManager: PackageManager, packageName: string): string[] {
+  if (packageManager === 'pnpm') return ['add', '-D', packageName]
+  if (packageManager === 'yarn') return ['add', '-D', packageName]
+  return ['install', '-D', packageName]
 }
 
 function resolveProjectRoot(input: string, cwd: string): string {
@@ -108,45 +116,415 @@ export default defineRenderizerConfig({
 `
 }
 
-function vueExampleComponentSource(): string {
-  return `<script setup lang="ts">
+function vueMainSource(language: ScriptLanguage): string {
+  const appImport = language === 'ts' ? "import App from './App.vue'" : "import App from './App.vue'"
+  return `import { createApp } from 'vue'
+import { createRenderizer } from '@renderizer/vue'
+${appImport}
+import renderizerConfig from '../renderizer.config'
+import './style.css'
+
+createApp(App)
+  .use(createRenderizer(renderizerConfig))
+  .mount('#app')
+`
+}
+
+function vueAppSource(language: ScriptLanguage): string {
+  return `<script setup${language === 'ts' ? ' lang="ts"' : ''}>
 import { ref } from 'vue'
 import { RenderWindow } from '@renderizer/vue'
 
 const open = ref(false)
+const theme = ref${language === 'ts' ? "<'dark' | 'light'>" : ''}('dark')
+
+function toggleTheme() {
+  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  document.documentElement.dataset.theme = theme.value
+}
 </script>
 
 <template>
-  <button type="button" @click="open = true">
-    Open Renderizer Inspector
-  </button>
+  <main class="renderizer-demo">
+    <section class="hero">
+      <p class="eyebrow">Renderizer</p>
+      <h1>One Vue runtime. Multiple native windows.</h1>
+      <p>
+        Open a native Electron window rendered by the same Vue app, then toggle the theme
+        to see document styles sync live.
+      </p>
+      <div class="actions">
+        <button type="button" @click="open = true">Open Inspector</button>
+        <button type="button" class="secondary" @click="toggleTheme">Toggle Theme</button>
+      </div>
+    </section>
+  </main>
 
   <RenderWindow
     v-model:open="open"
-    window-id="renderizer-inspector-example"
+    window-id="renderizer-inspector"
     config-id="inspector"
   >
-    <section style="display: grid; gap: 12px; padding: 24px; color: var(--renderizer-example-text, inherit);">
-      <h1 style="margin: 0; font-size: 20px;">Renderizer Inspector</h1>
-      <p style="margin: 0; line-height: 1.5;">
-        This content is rendered by the same Vue app inside a native Electron window.
-      </p>
+    <section class="inspector">
+      <header>
+        <span>Render Window</span>
+        <strong>{{ theme }} theme</strong>
+      </header>
+      <div class="inspector-grid">
+        <article>
+          <span>Runtime</span>
+          <strong>Shared Vue tree</strong>
+        </article>
+        <article>
+          <span>Document</span>
+          <strong>Native Electron window</strong>
+        </article>
+        <article>
+          <span>Theme sync</span>
+          <strong>Live</strong>
+        </article>
+      </div>
     </section>
   </RenderWindow>
 </template>
 `
 }
 
+function vueStyleSource(): string {
+  return `:root {
+  color: #e8edf5;
+  background: #10141c;
+  font-family: "Aptos", "Segoe UI", sans-serif;
+}
+
+:root[data-theme="light"] {
+  color: #18202d;
+  background: #f4f7fb;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(45, 180, 145, 0.18), transparent 32rem),
+    linear-gradient(315deg, rgba(80, 120, 255, 0.14), transparent 28rem),
+    var(--page-bg, #10141c);
+  color: inherit;
+}
+
+:root[data-theme="light"] body {
+  --page-bg: #f4f7fb;
+}
+
+button {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: #39d39f;
+  color: #07120f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: transparent;
+  color: inherit;
+}
+
+.renderizer-demo {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+}
+
+.hero {
+  width: min(760px, 100%);
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #39d39f;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  max-width: 680px;
+  font-size: clamp(42px, 8vw, 82px);
+  line-height: 0.96;
+}
+
+.hero p:not(.eyebrow) {
+  max-width: 620px;
+  color: color-mix(in srgb, currentColor 72%, transparent);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.inspector {
+  display: grid;
+  gap: 18px;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 28px;
+  background: inherit;
+  color: inherit;
+}
+
+.inspector header,
+.inspector article {
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.inspector header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 18px;
+}
+
+.inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inspector article {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 18px;
+}
+
+.inspector span {
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  font-size: 13px;
+}
+`
+}
+
+function electronMainSource(language: ScriptLanguage): string {
+  const configImport = language === 'ts' ? '../renderizer.config' : '../renderizer.config.js'
+  const typeImport = language === 'ts' ? "import type { BrowserWindowConstructorOptions } from 'electron'\n" : ''
+  const returnType = language === 'ts' ? ': BrowserWindowConstructorOptions' : ''
+  const optionsType = language === 'ts' ? ': BrowserWindowConstructorOptions' : ''
+  const variableTypes = language === 'ts'
+    ? 'let mainWindow: BrowserWindow | null = null\nlet renderWindows: RenderWindowManager | null = null'
+    : 'let mainWindow = null\nlet renderWindows = null'
+  const functionReturn = language === 'ts' ? ': void' : ''
+  const ipcTypes = language === 'ts' ? ', windowId: string' : ', windowId'
+  const actionTypes = language === 'ts' ? ', action' : ', action'
+  return `import { app, BrowserWindow, ipcMain, shell } from 'electron'
+${typeImport}import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { RenderWindowManager } from '@renderizer/vue/electron'
+import renderizerConfig from '${configImport}'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const rendererUrl = process.env.RENDERIZER_EXAMPLE_URL ?? 'http://127.0.0.1:5173'
+
+${variableTypes}
+
+function defaultRenderWindowOptions()${returnType} {
+  const options${optionsType} = {
+    backgroundColor: '#10141c',
+  }
+  const width = renderizerConfig.windows?.default?.width
+  const height = renderizerConfig.windows?.default?.height
+  if (width !== undefined) options.width = width
+  if (height !== undefined) options.height = height
+  return options
+}
+
+function createMainWindow()${functionReturn} {
+  mainWindow = new BrowserWindow({
+    width: 1120,
+    height: 760,
+    minWidth: 720,
+    minHeight: 480,
+    backgroundColor: '#10141c',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.${language === 'ts' ? 'js' : 'js'}'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+
+  renderWindows = new RenderWindowManager({
+    preloadPath: path.join(__dirname, 'preload.js'),
+    defaultWindowOptions: defaultRenderWindowOptions(),
+    openExternal: (url) => shell.openExternal(url),
+  })
+  renderWindows.attachTo(mainWindow)
+
+  void mainWindow.loadURL(rendererUrl)
+}
+
+ipcMain.handle('renderizer-window-ready', (event${ipcTypes}) => {
+  renderWindows?.show(event, windowId)
+})
+
+ipcMain.handle('renderizer-window-control', (event${ipcTypes}${actionTypes}) => {
+  renderWindows?.control(event, windowId, action)
+})
+
+ipcMain.handle('renderizer-window-state', (event${ipcTypes}) =>
+  renderWindows?.getState(event, windowId) ?? { isMaximized: false, isFullScreen: false },
+)
+
+app.whenReady().then(createMainWindow)
+
+app.on('before-quit', () => {
+  renderWindows?.closeAll()
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+})
+`
+}
+
+function electronPreloadSource(): string {
+  return `import { exposeRenderizerBridge } from '@renderizer/vue/preload'
+
+exposeRenderizerBridge()
+`
+}
+
+function electronTsConfigSource(): string {
+  return `{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist-electron",
+    "types": ["node"]
+  },
+  "include": ["electron/**/*.ts", "renderizer.config.ts"]
+}
+`
+}
+
+async function updatePackageJsonForTemplate(projectRoot: string, language: ScriptLanguage): Promise<void> {
+  const packagePath = path.join(projectRoot, 'package.json')
+  const packageJson = JSON.parse(await readFile(packagePath, 'utf8')) as {
+    main?: string
+    scripts?: Record<string, string>
+    type?: string
+  }
+  packageJson.type = 'module'
+  packageJson.main = language === 'ts' ? 'dist-electron/electron/main.js' : 'electron/main.js'
+  packageJson.scripts = {
+    ...packageJson.scripts,
+    dev: 'vite --host 127.0.0.1',
+    'dev:electron': language === 'ts' ? 'npm run build:electron && electron .' : 'electron .',
+    build: language === 'ts' ? 'vite build && npm run build:electron' : 'vite build',
+    ...(language === 'ts' ? { 'build:electron': 'tsc -p tsconfig.electron.json' } : {}),
+  }
+  await writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8')
+}
+
+async function createTemplateProject(projectRoot: string, language: ScriptLanguage): Promise<void> {
+  const s = spinner()
+  const parent = path.dirname(projectRoot)
+  const projectName = path.basename(projectRoot)
+  const targetExists = existsSync(projectRoot)
+  const viteTemplate = language === 'ts' ? 'vue-ts' : 'vue'
+
+  s.start('Creating Vue project with Vite')
+  if (targetExists) {
+    await run('npm', ['create', 'vite@latest', '.', '--', '--template', viteTemplate], projectRoot)
+  } else {
+    await mkdir(parent, { recursive: true })
+    await run('npm', ['create', 'vite@latest', projectName, '--', '--template', viteTemplate], parent)
+  }
+  s.stop('Created Vite project')
+
+  s.start('Installing dependencies')
+  await run('npm', ['install'], projectRoot)
+  await run('npm', installArgs('npm', '@renderizer/vue@alpha'), projectRoot)
+  await run('npm', installDevArgs('npm', 'electron'), projectRoot)
+  s.stop('Installed Renderizer and Electron')
+
+  const configFormat: ConfigFormat = language
+  await writeFile(path.join(projectRoot, `renderizer.config.${configFormat}`), configSource('vue', {
+    renderer: '.',
+    electron: '.',
+  }), 'utf8')
+  await mkdir(path.join(projectRoot, 'electron'), { recursive: true })
+  await writeFile(path.join(projectRoot, 'electron', `main.${language}`), electronMainSource(language), 'utf8')
+  await writeFile(path.join(projectRoot, 'electron', `preload.${language}`), electronPreloadSource(), 'utf8')
+  await writeFile(path.join(projectRoot, 'src', `main.${language}`), vueMainSource(language), 'utf8')
+  await writeFile(path.join(projectRoot, 'src', 'App.vue'), vueAppSource(language), 'utf8')
+  await writeFile(path.join(projectRoot, 'src', 'style.css'), vueStyleSource(), 'utf8')
+  if (language === 'ts') {
+    await writeFile(path.join(projectRoot, 'tsconfig.electron.json'), electronTsConfigSource(), 'utf8')
+  }
+  await updatePackageJsonForTemplate(projectRoot, language)
+}
+
 async function main(): Promise<void> {
   intro('Renderizer')
 
   const defaultRoot = process.cwd()
+  const mode = cancelIfNeeded(await select<CliMode>({
+    message: 'What do you want to do?',
+    options: [
+      { value: 'template', label: 'Create template project', hint: 'Vue + Vite + Electron + Renderizer' },
+      { value: 'existing', label: 'Add to existing project', hint: 'Install and configure Renderizer' },
+    ],
+  }))
+
   const projectRootInput = cancelIfNeeded(await text({
-    message: 'Where is your project root?',
+    message: mode === 'template' ? 'Where should the template project be created?' : 'Where is your project root?',
     placeholder: '.',
     defaultValue: '.',
   }))
   const projectRoot = resolveProjectRoot(String(projectRootInput), defaultRoot)
+
+  if (mode === 'template') {
+    const language = cancelIfNeeded(await select<ScriptLanguage>({
+      message: 'Use JavaScript or TypeScript?',
+      options: [
+        { value: 'ts', label: 'TypeScript' },
+        { value: 'js', label: 'JavaScript' },
+      ],
+    }))
+    if (existsSync(projectRoot)) {
+      const overwrite = cancelIfNeeded(await confirm({
+        message: `${projectRoot} already exists. Continue and let Vite handle it?`,
+        initialValue: false,
+      }))
+      if (!overwrite) {
+        outro('No files changed.')
+        return
+      }
+    }
+    await createTemplateProject(projectRoot, language)
+    outro('Renderizer template project is ready.')
+    return
+  }
+
   const packageName = await readPackageName(projectRoot)
 
   const adapter = cancelIfNeeded(await select<Adapter>({
@@ -180,13 +558,6 @@ async function main(): Promise<void> {
     ],
   }))
 
-  const shouldCreateExample = adapter === 'vue'
-    ? cancelIfNeeded(await confirm({
-        message: 'Create an example RenderWindow component?',
-        initialValue: true,
-      }))
-    : false
-
   const adapterPackage = adapterPackages[adapter]
   if (!adapterPackage) {
     cancel(`@renderizer/${adapter} is not published yet. Choose Vue for the current alpha.`)
@@ -213,16 +584,6 @@ async function main(): Promise<void> {
     electron: relativePath(projectRoot, electronRoot),
   }), 'utf8')
   s.stop(`Created ${path.basename(configPath)}`)
-
-  if (shouldCreateExample) {
-    const examplePath = path.join(rendererRoot, 'src', 'renderizer', 'RenderizerInspectorExample.vue')
-    if (!existsSync(examplePath)) {
-      s.start('Writing example RenderWindow component')
-      await mkdir(path.dirname(examplePath), { recursive: true })
-      await writeFile(examplePath, vueExampleComponentSource(), 'utf8')
-      s.stop(`Created ${relativePath(projectRoot, examplePath)}`)
-    }
-  }
 
   const packageManager = resolvePackageManager()
   const installRoots = [...new Set([rendererRoot, electronRoot])]
