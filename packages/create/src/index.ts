@@ -53,6 +53,11 @@ function run(command: string, args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
+      env: {
+        ...process.env,
+        npm_config_yes: 'true',
+        npm_config_update_notifier: 'false',
+      },
       stdio: 'inherit',
       shell: process.platform === 'win32',
     })
@@ -453,10 +458,10 @@ async function createTemplateProject(projectRoot: string, language: ScriptLangua
 
   s.start('Creating Vue project with Vite')
   if (targetExists) {
-    await run('npm', ['create', 'vite@latest', '.', '--', '--template', viteTemplate], projectRoot)
+    await run('npm', ['create', '--yes', 'vite@latest', '.', '--', '--template', viteTemplate], projectRoot)
   } else {
     await mkdir(parent, { recursive: true })
-    await run('npm', ['create', 'vite@latest', projectName, '--', '--template', viteTemplate], parent)
+    await run('npm', ['create', '--yes', 'vite@latest', projectName, '--', '--template', viteTemplate], parent)
   }
   s.stop('Created Vite project')
 
