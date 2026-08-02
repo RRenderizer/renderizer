@@ -30,12 +30,6 @@ function installArgs(packageManager: PackageManager, packageName: string): strin
   return ['install', packageName]
 }
 
-function installDevArgs(packageManager: PackageManager, packageName: string): string[] {
-  if (packageManager === 'pnpm') return ['add', '-D', packageName]
-  if (packageManager === 'yarn') return ['add', '-D', packageName]
-  return ['install', '-D', packageName]
-}
-
 function resolveProjectRoot(input: string, cwd: string): string {
   const normalizedInput = input.trim()
   if (!normalizedInput || normalizedInput === '.' || normalizedInput === './' || normalizedInput === '/') {
@@ -424,6 +418,8 @@ function electronTsConfigSource(): string {
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist-electron",
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
     "types": ["node"]
   },
   "include": ["electron/**/*.ts", "renderizer.config.ts"]
@@ -431,49 +427,118 @@ function electronTsConfigSource(): string {
 `
 }
 
-async function updatePackageJsonForTemplate(projectRoot: string, language: ScriptLanguage): Promise<void> {
-  const packagePath = path.join(projectRoot, 'package.json')
-  const packageJson = JSON.parse(await readFile(packagePath, 'utf8')) as {
-    main?: string
-    scripts?: Record<string, string>
-    type?: string
+function packageJsonSource(projectName: string, language: ScriptLanguage): string {
+  const packageJson = {
+    name: projectName,
+    private: true,
+    version: '0.0.0',
+    type: 'module',
+    main: language === 'ts' ? 'dist-electron/electron/main.js' : 'electron/main.js',
+    scripts: {
+      dev: 'vite --host 127.0.0.1',
+      'dev:electron': language === 'ts' ? 'npm run build:electron && electron .' : 'electron .',
+      build: language === 'ts' ? 'vite build && npm run build:electron' : 'vite build',
+      ...(language === 'ts' ? { 'build:electron': 'tsc -p tsconfig.electron.json' } : {}),
+      'type-check': language === 'ts' ? 'vue-tsc --noEmit && tsc -p tsconfig.electron.json --noEmit' : 'vite build',
+    },
+    dependencies: {
+      '@renderizer/vue': 'alpha',
+      '@vitejs/plugin-vue': '^6.0.1',
+      vite: '^7.0.6',
+      vue: '^3.5.18',
+    },
+    devDependencies: {
+      electron: '^37.3.1',
+      ...(language === 'ts'
+        ? {
+            typescript: '^5.9.2',
+            'vue-tsc': '^3.0.4',
+          }
+        : {}),
+    },
   }
-  packageJson.type = 'module'
-  packageJson.main = language === 'ts' ? 'dist-electron/electron/main.js' : 'electron/main.js'
-  packageJson.scripts = {
-    ...packageJson.scripts,
-    dev: 'vite --host 127.0.0.1',
-    'dev:electron': language === 'ts' ? 'npm run build:electron && electron .' : 'electron .',
-    build: language === 'ts' ? 'vite build && npm run build:electron' : 'vite build',
-    ...(language === 'ts' ? { 'build:electron': 'tsc -p tsconfig.electron.json' } : {}),
-  }
-  await writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8')
+  return `${JSON.stringify(packageJson, null, 2)}\n`
+}
+
+function indexHtmlSource(projectName: string, language: ScriptLanguage): string {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${projectName}</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.${language}"></script>
+  </body>
+</html>
+`
+}
+
+function viteConfigSource(language: ScriptLanguage): string {
+  return `import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    host: '127.0.0.1',
+    port: 5173,
+  },
+})
+`
+}
+
+function tsConfigSource(): string {
+  return `{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "renderizer.config.ts", "vite.config.ts"]
+}
+`
+}
+
+function vueShimSource(): string {
+  return `declare module '*.vue' {
+  import type { DefineComponent } from 'vue'
+  const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>
+  export default component
+}
+`
 }
 
 async function createTemplateProject(projectRoot: string, language: ScriptLanguage): Promise<void> {
   const s = spinner()
-  const parent = path.dirname(projectRoot)
   const projectName = path.basename(projectRoot)
-  const targetExists = existsSync(projectRoot)
-  const viteTemplate = language === 'ts' ? 'vue-ts' : 'vue'
 
-  s.start('Creating Vue project with Vite')
-  if (targetExists) {
-    await run('npm', ['exec', '--yes', 'create-vite@latest', '--', '.', '--template', viteTemplate], projectRoot)
-  } else {
-    await mkdir(parent, { recursive: true })
-    await run('npm', ['exec', '--yes', 'create-vite@latest', '--', projectName, '--template', viteTemplate], parent)
-  }
-  if (!existsSync(path.join(projectRoot, 'package.json'))) {
-    throw new Error(`Vite did not create a package.json in ${projectRoot}.`)
-  }
-  s.stop('Created Vite project')
+  s.start('Writing Renderizer template')
+  await mkdir(path.join(projectRoot, 'src'), { recursive: true })
+  await mkdir(path.join(projectRoot, 'electron'), { recursive: true })
+  await writeFile(path.join(projectRoot, 'package.json'), packageJsonSource(projectName, language), 'utf8')
+  await writeFile(path.join(projectRoot, 'index.html'), indexHtmlSource(projectName, language), 'utf8')
+  await writeFile(path.join(projectRoot, `vite.config.${language}`), viteConfigSource(language), 'utf8')
+  s.stop('Created Renderizer template')
 
   s.start('Installing dependencies')
   await run('npm', ['install'], projectRoot)
-  await run('npm', installArgs('npm', '@renderizer/vue@alpha'), projectRoot)
-  await run('npm', installDevArgs('npm', 'electron'), projectRoot)
-  s.stop('Installed Renderizer and Electron')
+  s.stop('Installed dependencies')
 
   const configFormat: ConfigFormat = language
   await writeFile(path.join(projectRoot, `renderizer.config.${configFormat}`), configSource('vue', {
@@ -488,8 +553,9 @@ async function createTemplateProject(projectRoot: string, language: ScriptLangua
   await writeFile(path.join(projectRoot, 'src', 'style.css'), vueStyleSource(), 'utf8')
   if (language === 'ts') {
     await writeFile(path.join(projectRoot, 'tsconfig.electron.json'), electronTsConfigSource(), 'utf8')
+    await writeFile(path.join(projectRoot, 'tsconfig.json'), tsConfigSource(), 'utf8')
+    await writeFile(path.join(projectRoot, 'src', 'env.d.ts'), vueShimSource(), 'utf8')
   }
-  await updatePackageJsonForTemplate(projectRoot, language)
 }
 
 async function main(): Promise<void> {
