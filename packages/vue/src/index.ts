@@ -1,6 +1,6 @@
-export { createRenderizer } from './plugin'
-export { default as RenderizerProvider } from './RenderizerProvider'
-export { default as RenderWindow } from './RenderWindow'
+export { createRenderizer } from './plugin.js'
+export { default as RenderizerProvider } from './RenderizerProvider.js'
+export { default as RenderWindow } from './RenderWindow.js'
 export {
   defineRenderizerConfig,
   getRenderizerConfig,
@@ -8,10 +8,10 @@ export {
   setRenderizerConfig,
   type RenderizerConfig,
   type RenderWindowPreset,
-} from './config'
+} from './config.js'
 export {
   useRenderWindow,
   type RenderizerBridge,
   type UseRenderWindowOptions,
   type UseRenderWindowReturn,
-} from './useRenderWindow'
+} from './useRenderWindow.js'

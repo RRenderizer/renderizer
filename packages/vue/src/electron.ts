@@ -5,4 +5,4 @@ export {
   type RenderWindowAction,
   type RenderWindowManagerOptions,
   type RenderWindowState,
-} from './electron/manager'
+} from './electron/manager.js'

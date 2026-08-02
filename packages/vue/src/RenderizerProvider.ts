@@ -1,6 +1,6 @@
 import { defineComponent, watchEffect } from 'vue'
 import type { PropType } from 'vue'
-import { setRenderizerConfig, type RenderizerConfig } from './config'
+import { setRenderizerConfig, type RenderizerConfig } from './config.js'
 
 export default defineComponent({
   name: 'RenderizerProvider',

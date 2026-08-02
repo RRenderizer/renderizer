@@ -1,4 +1,4 @@
 export {
   exposeRenderizerBridge,
   type RenderizerBridge,
-} from './electron/preload'
+} from './electron/preload.js'

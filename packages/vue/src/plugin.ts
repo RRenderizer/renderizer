@@ -1,5 +1,5 @@
 import type { App, Plugin } from 'vue'
-import { setRenderizerConfig, type RenderizerConfig } from './config'
+import { setRenderizerConfig, type RenderizerConfig } from './config.js'
 
 export function createRenderizer(config: RenderizerConfig): Plugin {
   return {

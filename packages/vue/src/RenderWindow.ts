@@ -1,8 +1,8 @@
 import { Teleport, computed, defineComponent, h, ref, toRef, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { WindowFeatureOptions } from '@renderizer/core'
-import { useRenderWindow, type RenderizerBridge, type UseRenderWindowOptions } from './useRenderWindow'
-import { getRenderizerConfig, resolveRenderWindowPreset } from './config'
+import { useRenderWindow, type RenderizerBridge, type UseRenderWindowOptions } from './useRenderWindow.js'
+import { getRenderizerConfig, resolveRenderWindowPreset } from './config.js'
 
 const windowOpenFeatureKeys = ['width', 'height', 'left', 'top', 'popup', 'resizable'] as const
 

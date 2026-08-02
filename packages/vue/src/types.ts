@@ -1,4 +1,4 @@
-import type { RenderizerBridge } from './useRenderWindow'
+import type { RenderizerBridge } from './useRenderWindow.js'
 
 declare global {
   interface Window {
