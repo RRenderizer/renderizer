@@ -10,6 +10,9 @@ type ConfigFormat = 'ts' | 'js'
 type CliMode = 'existing' | 'template'
 type ScriptLanguage = 'ts' | 'js'
 type PackageManager = 'npm' | 'pnpm' | 'yarn'
+interface RunOptions {
+  silent?: boolean
+}
 
 const adapterPackages: Record<Adapter, string | null> = {
   js: null,
@@ -52,7 +55,7 @@ function resolvePackageManager(): PackageManager {
 function installArgs(packageManager: PackageManager, packageName: string): string[] {
   if (packageManager === 'pnpm') return ['add', packageName]
   if (packageManager === 'yarn') return ['add', packageName]
-  return ['install', packageName]
+  return ['install', packageName, '--silent', '--no-audit', '--no-fund']
 }
 
 function resolveProjectRoot(input: string, cwd: string): string {
@@ -68,8 +71,9 @@ function relativePath(from: string, to: string): string {
   return relative ? `./${relative}` : '.'
 }
 
-function run(command: string, args: string[], cwd: string): Promise<void> {
+function run(command: string, args: string[], cwd: string, options: RunOptions = {}): Promise<void> {
   return new Promise((resolve, reject) => {
+    let output = ''
     const child = spawn(command, args, {
       cwd,
       env: {
@@ -78,13 +82,24 @@ function run(command: string, args: string[], cwd: string): Promise<void> {
         npm_config_yes: 'true',
         npm_config_update_notifier: 'false',
       },
-      stdio: 'inherit',
+      stdio: options.silent ? ['ignore', 'pipe', 'pipe'] : 'inherit',
       shell: process.platform === 'win32',
     })
+    if (options.silent) {
+      child.stdout?.on('data', (chunk: Buffer) => {
+        output += chunk.toString()
+      })
+      child.stderr?.on('data', (chunk: Buffer) => {
+        output += chunk.toString()
+      })
+    }
     child.on('error', reject)
     child.on('exit', (code) => {
       if (code === 0) resolve()
-      else reject(new Error(`${command} ${args.join(' ')} exited with code ${code}`))
+      else {
+        const details = output.trim()
+        reject(new Error(`${command} ${args.join(' ')} exited with code ${code}${details ? `\n${details}` : ''}`))
+      }
     })
   })
 }
@@ -697,7 +712,7 @@ async function createTemplateProject(projectRoot: string, language: ScriptLangua
   s.stop('Created Renderizer template')
 
   s.start('Installing dependencies')
-  await run('npm', ['install'], projectRoot)
+  await run('npm', ['install', '--silent', '--no-audit', '--no-fund'], projectRoot, { silent: true })
   s.stop('Installed dependencies')
 
   const configFormat: ConfigFormat = language
@@ -831,7 +846,7 @@ async function main(): Promise<void> {
       process.exit(1)
     }
     s.start(`Installing ${adapterPackage} in ${relativePath(projectRoot, installRoot)}`)
-    await run(packageManager, installArgs(packageManager, adapterPackage), installRoot)
+    await run(packageManager, installArgs(packageManager, adapterPackage), installRoot, { silent: true })
     s.stop(`Installed ${adapterPackage} in ${relativePath(projectRoot, installRoot)}`)
   }
 
