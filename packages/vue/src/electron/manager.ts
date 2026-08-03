@@ -19,8 +19,53 @@ export interface RenderWindowManagerOptions {
 
 const defaultFramePrefix = 'renderizer'
 const windowIdPattern = /^[a-z0-9][a-z0-9:_-]{0,127}$/
-const booleanFeatureKeys = ['frame', 'transparent', 'alwaysOnTop', 'resizable'] as const
-const numberFeatureKeys = ['width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight', 'left', 'top'] as const
+const booleanFeatureKeys = [
+  'frame',
+  'show',
+  'center',
+  'resizable',
+  'movable',
+  'minimizable',
+  'maximizable',
+  'closable',
+  'focusable',
+  'alwaysOnTop',
+  'fullscreen',
+  'fullscreenable',
+  'simpleFullscreen',
+  'skipTaskbar',
+  'kiosk',
+  'titleBarOverlay',
+  'transparent',
+  'autoHideMenuBar',
+  'enableLargerThanScreen',
+  'hasShadow',
+  'thickFrame',
+  'paintWhenInitiallyHidden',
+  'acceptFirstMouse',
+  'disableAutoHideCursor',
+  'roundedCorners',
+  'darkTheme',
+] as const
+const numberFeatureKeys = [
+  'width',
+  'height',
+  'minWidth',
+  'minHeight',
+  'maxWidth',
+  'maxHeight',
+  'left',
+  'top',
+  'x',
+  'y',
+  'opacity',
+] as const
+const stringFeatureKeys = [
+  'backgroundColor',
+  'titleBarStyle',
+  'vibrancy',
+  'visualEffectState',
+] as const
 
 export function createRenderWindowFrameName(windowId: string, framePrefix = defaultFramePrefix): string {
   if (!windowIdPattern.test(windowId)) {
@@ -66,7 +111,12 @@ function readElectronWindowFeatures(features: string): BrowserWindowConstructorO
       ;(options as Record<string, unknown>)[key === 'left' ? 'x' : key === 'top' ? 'y' : key] = parsed
     }
   }
-  if (typeof parsedFeatures.backgroundColor === 'string') options.backgroundColor = parsedFeatures.backgroundColor
+  for (const key of stringFeatureKeys) {
+    const value = parsedFeatures[key]
+    if (typeof value === 'string') {
+      ;(options as Record<string, unknown>)[key] = value
+    }
+  }
   return options
 }
 

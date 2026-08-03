@@ -609,7 +609,7 @@ function packageJsonSource(projectName: string, language: ScriptLanguage): strin
       'type-check': language === 'ts' ? 'vue-tsc --noEmit && tsc -p tsconfig.electron.json --noEmit' : 'vite build',
     },
     dependencies: {
-      '@renderizer/vue': '^0.1.0-alpha.4',
+      '@renderizer/vue': '^0.1.0-alpha.6',
       '@vitejs/plugin-vue': '^6.0.1',
       vite: '^7.0.6',
       vue: '^3.5.18',

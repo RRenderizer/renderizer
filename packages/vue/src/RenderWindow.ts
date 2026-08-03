@@ -9,6 +9,8 @@ const windowOpenFeatureKeys = [
   'height',
   'left',
   'top',
+  'x',
+  'y',
   'popup',
   'resizable',
   'minWidth',
@@ -16,16 +18,43 @@ const windowOpenFeatureKeys = [
   'maxWidth',
   'maxHeight',
   'frame',
+  'show',
+  'center',
+  'movable',
+  'minimizable',
+  'maximizable',
+  'closable',
+  'focusable',
+  'fullscreen',
+  'fullscreenable',
+  'simpleFullscreen',
+  'skipTaskbar',
+  'kiosk',
+  'titleBarOverlay',
   'transparent',
-  'backgroundColor',
   'alwaysOnTop',
+  'autoHideMenuBar',
+  'enableLargerThanScreen',
+  'hasShadow',
+  'thickFrame',
+  'paintWhenInitiallyHidden',
+  'acceptFirstMouse',
+  'disableAutoHideCursor',
+  'roundedCorners',
+  'backgroundColor',
+  'titleBarStyle',
+  'vibrancy',
+  'visualEffectState',
+  'opacity',
+  'darkTheme',
 ] as const
 
 function pickWindowOpenFeatures(source: Partial<WindowFeatureOptions> | undefined): WindowFeatureOptions {
   const features: WindowFeatureOptions = {}
   if (!source) return features
+  const sourceRecord = source as Record<string, unknown>
   for (const key of windowOpenFeatureKeys) {
-    const value = source[key]
+    const value = sourceRecord[key]
     if (value !== undefined) {
       ;(features as Record<string, unknown>)[key] = value
     }

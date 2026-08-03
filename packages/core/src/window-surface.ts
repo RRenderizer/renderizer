@@ -3,6 +3,8 @@ export interface WindowFeatureOptions {
   height?: number
   left?: number
   top?: number
+  x?: number
+  y?: number
   popup?: boolean
   resizable?: boolean
   minWidth?: number
@@ -10,9 +12,35 @@ export interface WindowFeatureOptions {
   maxWidth?: number
   maxHeight?: number
   frame?: boolean
+  show?: boolean
+  center?: boolean
+  movable?: boolean
+  minimizable?: boolean
+  maximizable?: boolean
+  closable?: boolean
+  focusable?: boolean
+  fullscreen?: boolean
+  fullscreenable?: boolean
+  simpleFullscreen?: boolean
+  skipTaskbar?: boolean
+  kiosk?: boolean
+  titleBarOverlay?: boolean
   transparent?: boolean
-  backgroundColor?: string
   alwaysOnTop?: boolean
+  autoHideMenuBar?: boolean
+  enableLargerThanScreen?: boolean
+  hasShadow?: boolean
+  thickFrame?: boolean
+  paintWhenInitiallyHidden?: boolean
+  acceptFirstMouse?: boolean
+  disableAutoHideCursor?: boolean
+  roundedCorners?: boolean
+  backgroundColor?: string
+  titleBarStyle?: 'default' | 'hidden' | 'hiddenInset' | 'customButtonsOnHover'
+  vibrancy?: string
+  visualEffectState?: 'followWindow' | 'active' | 'inactive'
+  opacity?: number
+  darkTheme?: boolean
 }
 
 export interface WindowSurfaceSyncOptions {
@@ -58,15 +86,43 @@ export function normalizeWindowFeatures(features: WindowFeatureOptions = {}): st
     ['height', features.height],
     ['left', features.left],
     ['top', features.top],
+    ['x', features.x],
+    ['y', features.y],
     ['resizable', features.resizable],
     ['minWidth', features.minWidth],
     ['minHeight', features.minHeight],
     ['maxWidth', features.maxWidth],
     ['maxHeight', features.maxHeight],
     ['frame', features.frame],
+    ['show', features.show],
+    ['center', features.center],
+    ['movable', features.movable],
+    ['minimizable', features.minimizable],
+    ['maximizable', features.maximizable],
+    ['closable', features.closable],
+    ['focusable', features.focusable],
+    ['fullscreen', features.fullscreen],
+    ['fullscreenable', features.fullscreenable],
+    ['simpleFullscreen', features.simpleFullscreen],
+    ['skipTaskbar', features.skipTaskbar],
+    ['kiosk', features.kiosk],
+    ['titleBarOverlay', features.titleBarOverlay],
     ['transparent', features.transparent],
-    ['backgroundColor', features.backgroundColor],
     ['alwaysOnTop', features.alwaysOnTop],
+    ['autoHideMenuBar', features.autoHideMenuBar],
+    ['enableLargerThanScreen', features.enableLargerThanScreen],
+    ['hasShadow', features.hasShadow],
+    ['thickFrame', features.thickFrame],
+    ['paintWhenInitiallyHidden', features.paintWhenInitiallyHidden],
+    ['acceptFirstMouse', features.acceptFirstMouse],
+    ['disableAutoHideCursor', features.disableAutoHideCursor],
+    ['roundedCorners', features.roundedCorners],
+    ['backgroundColor', features.backgroundColor],
+    ['titleBarStyle', features.titleBarStyle],
+    ['vibrancy', features.vibrancy],
+    ['visualEffectState', features.visualEffectState],
+    ['opacity', features.opacity],
+    ['darkTheme', features.darkTheme],
   ] as const
 
   return entries
