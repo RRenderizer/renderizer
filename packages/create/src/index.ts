@@ -773,6 +773,15 @@ async function main(): Promise<void> {
       }
     }
     await createTemplateProject(projectRoot, language)
+    const shouldStart = cancelIfNeeded(await confirm({
+      message: 'Start Renderizer now?',
+      initialValue: true,
+    }))
+    if (shouldStart) {
+      outro(`Starting Renderizer in ${projectRoot}.`)
+      await run('npm', ['run', 'dev:electron'], projectRoot)
+      return
+    }
     outro('Renderizer template project is ready.')
     return
   }
