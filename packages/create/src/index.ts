@@ -134,20 +134,36 @@ export default defineRenderizerConfig({
   },
   windows: {
     default: {
-      width: 1180,
-      height: 780,
+      width: 1020,
+      height: 720,
       popup: true,
+      frame: true,
+      autoHideMenuBar: true,
+      backgroundColor: '#FEF9F4',
     },
     presets: [
       {
-        id: 'todos',
-        title: 'Renderizer Todos',
-        width: 940,
-        height: 680,
+        id: 'timeline',
+        title: 'Renderizer Timeline',
+        width: 660,
+        height: 620,
         popup: true,
-        minWidth: 720,
-        minHeight: 480,
+        minWidth: 520,
+        minHeight: 440,
         frame: true,
+        autoHideMenuBar: true,
+        backgroundColor: '#FEF9F4',
+      },
+      {
+        id: 'focus',
+        title: 'Renderizer Focus',
+        width: 620,
+        height: 620,
+        popup: true,
+        minWidth: 520,
+        minHeight: 440,
+        frame: true,
+        autoHideMenuBar: true,
         backgroundColor: '#FEF9F4',
       },
     ],
@@ -170,81 +186,300 @@ createApp(App)
 `
 }
 
-function vueAppSource(language: ScriptLanguage): string {
-  return `<script setup${language === 'ts' ? ' lang="ts"' : ''}>
-import { computed, ref } from 'vue'
+function vueAppSource(_language: ScriptLanguage): string {
+  return `<script setup>
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { RenderWindow } from '@renderizer/vue'
 import RenderizerLogo from './assets/renderizer_logo.svg?raw'
 import VueLogo from './assets/vue-js.svg?raw'
 
-const open = ref(false)
-const theme = ref${language === 'ts' ? "<'dark' | 'light'>" : ''}('light')
-const newTodo = ref('')
-const todos = ref([
-  { id: 1, text: 'Open a native Electron window', done: true },
-  { id: 2, text: 'Share Vue state between windows', done: false },
-  { id: 3, text: 'Toggle the theme live', done: false },
+const lanes = [
+  { id: 'backlog', title: 'Backlog', hint: 'Ideas waiting for a window' },
+  { id: 'active', title: 'Active', hint: 'Moving through shared state' },
+  { id: 'review', title: 'Review', hint: 'Ready for the final cut' },
+]
+
+const cards = ref([
+  { id: 1, title: 'Record CLI setup flow', owner: 'Andre', priority: 'High', lane: 'backlog' },
+  { id: 2, title: 'Show shared state across windows', owner: 'Renderizer', priority: 'High', lane: 'active' },
+  { id: 3, title: 'Polish blocky landing section', owner: 'Design', priority: 'Medium', lane: 'active' },
+  { id: 4, title: 'Cut LinkedIn teaser video', owner: 'Launch', priority: 'Low', lane: 'review' },
 ])
-const remainingTodos = computed(() => todos.value.filter((todo) => !todo.done).length)
+
+const events = ref([
+  { id: 1, label: 'Command room online', detail: 'Three Electron windows share one Vue runtime.', time: '00:00' },
+])
+
+const selectedCardId = ref(2)
+const timelineOpen = ref(false)
+const focusOpen = ref(false)
+const theme = ref('light')
+const draggingCardId = ref(null)
+const dropLaneId = ref(null)
+const dragPreview = ref({ x: 0, y: 0, speed: 0 })
+let lastPointer = { x: 0, y: 0, time: 0 }
+let didDrag = false
+let dragFrame = 0
+let pendingPointer = null
+
+const selectedCard = computed(() => cards.value.find((card) => card.id === selectedCardId.value) ?? cards.value[0])
+const completedCount = computed(() => cards.value.filter((card) => card.lane === 'review').length)
+const draggingCard = computed(() => cards.value.find((card) => card.id === draggingCardId.value) ?? null)
+const dragPreviewStyle = computed(() => ({
+  '--drag-speed': dragPreview.value.speed.toFixed(3),
+  transform: \`translate3d(\${dragPreview.value.x}px, \${dragPreview.value.y}px, 0)\`,
+}))
+
+function laneCards(lane) {
+  return cards.value.filter((card) => card.lane === lane)
+}
+
+function eventTime() {
+  return new Date().toLocaleTimeString([], { minute: '2-digit', second: '2-digit' })
+}
+
+function pushEvent(label, detail) {
+  events.value.unshift({ id: Date.now(), label, detail, time: eventTime() })
+  events.value = events.value.slice(0, 8)
+}
+
+function selectCard(card) {
+  selectedCardId.value = card.id
+  pushEvent('Card focused', \`\${card.title} is now visible in the Focus Window.\`)
+}
+
+function moveCard(card, lane) {
+  if (card.lane === lane) return
+  card.lane = lane
+  selectedCardId.value = card.id
+  pushEvent('Card moved', \`\${card.title} moved to \${lanes.find((item) => item.id === lane)?.title}.\`)
+}
+
+function laneFromPoint(x, y) {
+  const element = document.elementFromPoint(x, y)?.closest('[data-lane-id]')
+  const lane = element?.dataset.laneId
+  return lane === 'backlog' || lane === 'active' || lane === 'review' ? lane : null
+}
+
+function updateDragPreview(x, y) {
+  const now = performance.now()
+  const elapsed = Math.max(now - lastPointer.time, 16)
+  const dx = x - lastPointer.x
+  const dy = y - lastPointer.y
+  const speed = Math.min(Math.hypot(dx, dy) / elapsed, 2.4)
+  dragPreview.value = { x: x + 18, y: y + 18, speed }
+  lastPointer = { x, y, time: now }
+  dropLaneId.value = laneFromPoint(x, y)
+}
+
+function scheduleDragPreview(event) {
+  pendingPointer = { x: event.clientX, y: event.clientY }
+  if (dragFrame) return
+  dragFrame = window.requestAnimationFrame(() => {
+    dragFrame = 0
+    if (!pendingPointer) return
+    updateDragPreview(pendingPointer.x, pendingPointer.y)
+    pendingPointer = null
+  })
+}
+
+function onDragMove(event) {
+  if (!draggingCard.value) return
+  event.preventDefault()
+  didDrag = true
+  scheduleDragPreview(event)
+}
+
+function onDragEnd(event) {
+  if (!draggingCard.value) return
+  event.preventDefault()
+  if (dragFrame) {
+    window.cancelAnimationFrame(dragFrame)
+    dragFrame = 0
+  }
+  pendingPointer = null
+  const targetLane = laneFromPoint(event.clientX, event.clientY) ?? dropLaneId.value
+  if (targetLane) moveCard(draggingCard.value, targetLane)
+  draggingCardId.value = null
+  dropLaneId.value = null
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', onDragEnd)
+  window.removeEventListener('pointercancel', onDragEnd)
+  setTimeout(() => {
+    didDrag = false
+  }, 0)
+}
+
+function startDrag(card, event) {
+  if (event.button !== 0) return
+  event.preventDefault()
+  selectedCardId.value = card.id
+  draggingCardId.value = card.id
+  dropLaneId.value = card.lane
+  lastPointer = { x: event.clientX, y: event.clientY, time: performance.now() }
+  dragPreview.value = { x: event.clientX + 18, y: event.clientY + 18, speed: 0 }
+  window.addEventListener('pointermove', onDragMove)
+  window.addEventListener('pointerup', onDragEnd)
+  window.addEventListener('pointercancel', onDragEnd)
+}
+
+function handleCardClick(card) {
+  if (didDrag) return
+  selectCard(card)
+}
+
+function updateSelectedTitle(value) {
+  if (!selectedCard.value) return
+  selectedCard.value.title = value
+  pushEvent('Title edited', 'Focus Window changed the selected card title.')
+}
+
+function updateSelectedOwner(value) {
+  if (!selectedCard.value) return
+  selectedCard.value.owner = value
+  pushEvent('Owner edited', \`\${selectedCard.value.title} owner is now \${value}.\`)
+}
+
+function cyclePriority() {
+  if (!selectedCard.value) return
+  const next = selectedCard.value.priority === 'High' ? 'Medium' : selectedCard.value.priority === 'Medium' ? 'Low' : 'High'
+  selectedCard.value.priority = next
+  pushEvent('Priority changed', \`\${selectedCard.value.title} is now \${next} priority.\`)
+}
 
 function toggleTheme() {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  theme.value = theme.value === 'light' ? 'dark' : 'light'
   document.documentElement.dataset.theme = theme.value
 }
 
-function addTodo() {
-  const text = newTodo.value.trim()
-  if (!text) return
-  todos.value.push({ id: Date.now(), text, done: false })
-  newTodo.value = ''
-}
-
-function removeTodo(id${language === 'ts' ? ': number' : ''}) {
-  todos.value = todos.value.filter((todo) => todo.id !== id)
-}
+onBeforeUnmount(() => {
+  if (dragFrame) window.cancelAnimationFrame(dragFrame)
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', onDragEnd)
+  window.removeEventListener('pointercancel', onDragEnd)
+})
 </script>
 
 <template>
-  <main class="renderizer-demo">
-    <section class="hero">
+  <main class="command-room">
+    <header class="hero">
       <div class="brand-lockup" aria-label="Renderizer plus Vue">
         <span class="brand-mark brand-mark--renderizer" v-html="RenderizerLogo" />
-        <span class="brand-plus">+</span>
+        <span class="brand-plus" aria-hidden="true">♥</span>
         <span class="brand-mark brand-mark--vue" v-html="VueLogo" />
       </div>
-      <h1>Render Vue interfaces across native Electron windows.</h1>
-      <div class="actions">
-        <button type="button" @click="open = true">Open Todo Window</button>
+      <div class="hero-actions">
+        <button type="button" @click="timelineOpen = true">Open Timeline</button>
+        <button type="button" @click="focusOpen = true">Open Focus</button>
         <button type="button" class="secondary" @click="toggleTheme">Toggle Theme</button>
       </div>
-      <p class="status">{{ remainingTodos }} tasks left in shared memory</p>
+    </header>
+
+    <section class="stats-grid" aria-label="Shared state counters">
+      <article class="stat-card">
+        <span>Total Cards</span>
+        <strong>{{ cards.length }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>In Review</span>
+        <strong>{{ completedCount }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Selected</span>
+        <strong>{{ selectedCard?.priority }}</strong>
+      </article>
     </section>
+
+    <section class="board" aria-label="Kanban board">
+      <article
+        v-for="lane in lanes"
+        :key="lane.id"
+        class="lane"
+        :class="{ 'is-drop-target': dropLaneId === lane.id }"
+        :data-lane-id="lane.id"
+      >
+        <header>
+          <div>
+            <span>{{ lane.title }}</span>
+            <p>{{ lane.hint }}</p>
+          </div>
+          <strong>{{ laneCards(lane.id).length }}</strong>
+        </header>
+
+        <TransitionGroup name="card-flow" tag="div" class="card-stack">
+          <button
+            v-for="card in laneCards(lane.id)"
+            :key="card.id"
+            type="button"
+            class="kanban-card"
+            :class="{
+              'is-selected': selectedCardId === card.id,
+              'is-dragging': draggingCardId === card.id,
+            }"
+            @click="handleCardClick(card)"
+            @pointerdown="startDrag(card, $event)"
+          >
+            <span>{{ card.priority }}</span>
+            <strong>{{ card.title }}</strong>
+            <small>{{ card.owner }}</small>
+          </button>
+        </TransitionGroup>
+      </article>
+    </section>
+
+    <div v-if="draggingCard" class="drag-preview" :style="dragPreviewStyle">
+      <span>{{ draggingCard.priority }}</span>
+      <strong>{{ draggingCard.title }}</strong>
+      <small>{{ draggingCard.owner }}</small>
+    </div>
   </main>
 
   <RenderWindow
-    v-model:open="open"
-    window-id="renderizer-todos"
-    config-id="todos"
+    v-model:open="timelineOpen"
+    window-id="renderizer-timeline"
+    config-id="timeline"
     fallback="none"
   >
-    <section class="todo-window">
-      <div class="todo-header">
-        <span>Renderizer Todos</span>
-        <strong>{{ remainingTodos }} left</strong>
-      </div>
-      <form class="todo-form" @submit.prevent="addTodo">
-        <input v-model="newTodo" placeholder="Add a task shared by both windows" />
-        <button type="submit">Add</button>
-      </form>
-      <ul class="todo-list">
-        <li v-for="todo in todos" :key="todo.id" class="todo-card" :class="{ 'is-done': todo.done }">
-          <label>
-            <input v-model="todo.done" type="checkbox" />
-            <span>{{ todo.text }}</span>
-          </label>
-          <button type="button" class="icon-button" @click="removeTodo(todo.id)">Remove</button>
+    <section class="timeline-window">
+      <header class="window-header">
+        <span>Live Timeline</span>
+        <strong>{{ events.length }} events</strong>
+      </header>
+      <TransitionGroup name="timeline-flow" tag="ul" class="timeline-list">
+        <li v-for="event in events" :key="event.id" class="timeline-event">
+          <span>{{ event.time }}</span>
+          <div>
+            <strong>{{ event.label }}</strong>
+            <p>{{ event.detail }}</p>
+          </div>
         </li>
-      </ul>
+      </TransitionGroup>
+    </section>
+  </RenderWindow>
+
+  <RenderWindow
+    v-model:open="focusOpen"
+    window-id="renderizer-focus"
+    config-id="focus"
+    fallback="none"
+  >
+    <section v-if="selectedCard" class="focus-window">
+      <header class="window-header">
+        <span>Focus Window</span>
+        <strong>{{ selectedCard.priority }}</strong>
+      </header>
+      <label class="field-block">
+        <span>Title</span>
+        <textarea :value="selectedCard.title" @input="updateSelectedTitle($event.target.value)" />
+      </label>
+      <label class="field-block">
+        <span>Owner</span>
+        <input :value="selectedCard.owner" @input="updateSelectedOwner($event.target.value)" />
+      </label>
+      <div class="focus-actions">
+        <button type="button" @click="cyclePriority">Cycle Priority</button>
+        <button type="button" class="secondary" @click="moveCard(selectedCard, 'review')">Send To Review</button>
+      </div>
     </section>
   </RenderWindow>
 </template>
@@ -252,84 +487,112 @@ function removeTodo(id${language === 'ts' ? ': number' : ''}) {
 }
 
 function vueStyleSource(): string {
-  return `:root {
-  color: #262422;
-  background: #FEF9F4;
-  font-family: "Aptos", "Segoe UI", sans-serif;
+  return `@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap");
+
+:root {
+  --cream: #FEF9F4;
+  --ink: #262422;
+  --surface: #FEF9F4;
+  --muted: #77716B;
+  --line: rgba(38, 36, 34, 0.18);
+  --hot: #FF5B36;
+  --yellow: #F2D34F;
+  --shadow: #000;
+  --hard-shadow: 5px 5px 0 var(--shadow);
+  --card-shadow: 6px 6px 0 var(--shadow);
+  color: var(--ink);
+  background: var(--cream);
+  font-family: "Instrument Sans", "Aptos", "Segoe UI", sans-serif;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  color: #FEF9F4;
-  background: #262422;
+  --cream: #211F1D;
+  --ink: #FEF9F4;
+  --surface: #2C2926;
+  --muted: #C7BFB7;
+  --line: rgba(254, 249, 244, 0.16);
+  --hot: #F2D34F;
+  --yellow: #FF5B36;
+  --shadow: rgba(0, 0, 0, 0.42);
+  --hard-shadow: 4px 4px 0 var(--shadow);
+  --card-shadow: 4px 4px 0 var(--shadow);
   color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #FEF9F4;
-  color: inherit;
+  overflow: hidden;
+  background: var(--cream);
+  color: var(--ink);
+  user-select: none;
 }
 
-:root[data-theme="dark"] body {
-  background: #262422;
+button,
+input,
+textarea {
+  font: inherit;
 }
 
 button {
-  min-height: 48px;
-  padding: 0 18px;
-  border: 1px solid #262422;
+  min-height: 50px;
+  padding: 0 19px;
+  border: 2px solid var(--ink);
   border-radius: 0;
-  background: #262422;
-  color: #FEF9F4;
-  font: inherit;
-  font-weight: 800;
+  background: var(--hot);
+  color: #262422;
+  box-shadow: var(--hard-shadow);
   cursor: pointer;
+  font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
-:root[data-theme="dark"] button {
-  border-color: #FEF9F4;
-  background: #FEF9F4;
-  color: #262422;
+button:hover:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--shadow);
 }
 
 button.secondary {
-  background: transparent;
-  color: #262422;
+  background: var(--yellow);
 }
 
-:root[data-theme="dark"] button.secondary {
-  background: transparent;
-  color: #FEF9F4;
-}
-
-.renderizer-demo {
+.command-room {
   display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 32px;
+  grid-template-rows: auto auto 1fr;
+  gap: 18px;
+  width: 100vw;
+  height: 100vh;
+  padding: 24px;
+  overflow: hidden;
+  background: var(--cream);
 }
 
 .hero {
   display: grid;
+  grid-template-columns: 1fr auto;
   gap: 28px;
-  width: min(860px, 100%);
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
 }
 
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: clamp(18px, 4vw, 34px);
+  gap: clamp(14px, 3vw, 24px);
 }
 
 .brand-mark {
   display: grid;
   place-items: center;
-  width: clamp(92px, 18vw, 164px);
+  width: clamp(76px, 10vw, 112px);
   aspect-ratio: 1;
 }
 
@@ -340,145 +603,369 @@ button.secondary {
 }
 
 .brand-mark--renderizer svg path {
-  fill: #262422;
-}
-
-:root[data-theme="dark"] .brand-mark--renderizer svg path {
-  fill: #FEF9F4;
+  fill: var(--ink);
 }
 
 .brand-plus {
-  font-size: clamp(42px, 8vw, 84px);
-  font-weight: 900;
+  color: var(--hot);
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 700;
   line-height: 1;
 }
 
-h1 {
-  margin: 0;
-  max-width: 780px;
-  font-size: clamp(44px, 8vw, 88px);
-  line-height: 0.96;
-  letter-spacing: -0.06em;
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
-.actions {
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stat-card,
+.lane,
+.window-header,
+.timeline-event,
+.field-block {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 74px;
+  padding: 0 20px;
+  box-shadow: var(--hard-shadow);
+}
+
+.stat-card span,
+.window-header span,
+.field-block span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stat-card strong {
+  font-size: 32px;
+  font-weight: 560;
+  letter-spacing: -0.05em;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  min-height: 0;
+}
+
+.lane {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  padding: 14px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+.lane.is-drop-target {
+  background:
+    linear-gradient(0deg, color-mix(in srgb, var(--yellow) 18%, transparent), color-mix(in srgb, var(--yellow) 18%, transparent)),
+    var(--surface);
+  box-shadow: 7px 7px 0 var(--shadow);
+}
+
+.lane > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lane > header span {
+  font-size: 28px;
+  font-weight: 560;
+  letter-spacing: -0.045em;
+}
+
+.lane > header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.lane > header strong {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  color: #262422;
+}
+
+.card-stack {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  padding: 12px 8px 8px 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.kanban-card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-height: 142px;
+  padding: 14px;
+  text-align: left;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--card-shadow);
+  text-transform: none;
+  touch-action: none;
+  cursor: grab;
+}
+
+.kanban-card.is-selected {
+  background: var(--yellow);
+  color: #262422;
+}
+
+.kanban-card.is-dragging {
+  opacity: 0.38;
+  transform: scale(0.985);
+  box-shadow: none;
+  cursor: grabbing;
+}
+
+.kanban-card > span {
+  width: max-content;
+  padding: 5px 8px;
+  border: 2px solid currentColor;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kanban-card > strong {
+  max-width: 320px;
+  font-size: 21px;
+  font-weight: 560;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.kanban-card > small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.timeline-window,
+.focus-window {
+  display: grid;
+  gap: 16px;
+  width: 100vw;
+  height: 100vh;
+  padding: 22px;
+  overflow: hidden;
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.timeline-window {
+  grid-template-rows: auto 1fr;
+}
+
+.focus-window {
+  grid-template-rows: auto auto auto auto 1fr;
+}
+
+.window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 62px;
+  padding: 0 18px;
+}
+
+.window-header strong {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.timeline-list {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.timeline-event {
+  display: grid;
+  grid-template-columns: 66px 1fr;
+  gap: 14px;
+  padding: 16px;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+
+.timeline-event > span {
+  color: var(--hot);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.timeline-event strong {
+  font-size: 20px;
+  font-weight: 560;
+  letter-spacing: -0.04em;
+}
+
+.timeline-event p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.field-block {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  box-shadow: var(--hard-shadow);
+}
+
+.field-block input,
+.field-block textarea {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  outline: none;
+  font-size: 24px;
+  font-weight: 560;
+  letter-spacing: -0.045em;
+}
+
+.field-block textarea {
+  min-height: 154px;
+  resize: none;
+}
+
+.focus-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-.status {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+.card-flow-move,
+.card-flow-enter-active,
+.card-flow-leave-active,
+.timeline-flow-move,
+.timeline-flow-enter-active,
+.timeline-flow-leave-active {
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.card-flow-enter-from,
+.card-flow-leave-to,
+.timeline-flow-enter-from,
+.timeline-flow-leave-to {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+
+.drag-preview {
+  --drag-speed: 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  gap: 8px;
+  width: 320px;
+  min-height: 132px;
+  padding: 14px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--hot) calc(var(--drag-speed) * 18%), transparent), transparent 58%),
+    var(--yellow);
+  color: #262422;
+  box-shadow: calc(8px + var(--drag-speed) * 5px) calc(8px + var(--drag-speed) * 5px) 0 var(--shadow);
+  pointer-events: none;
+  backface-visibility: hidden;
+  contain: layout paint;
+  will-change: transform;
+}
+
+.drag-preview span {
+  width: max-content;
+  padding: 5px 8px;
+  border: 2px solid currentColor;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.todo-window {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 16px;
-  width: 100vw;
-  height: 100vh;
-  box-sizing: border-box;
-  padding: 24px;
-  background: inherit;
-  color: inherit;
+.drag-preview strong {
+  font-size: 22px;
+  font-weight: 560;
+  line-height: 1;
+  letter-spacing: -0.045em;
 }
 
-.todo-header,
-.todo-form,
-.todo-card {
-  border: 1px solid currentColor;
-  background: transparent;
-}
-
-.todo-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 64px;
-  padding: 0 20px;
-  font-weight: 900;
+.drag-preview small {
+  color: rgba(38, 36, 34, 0.68);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
-.todo-form {
-  display: grid;
-  grid-template-columns: 1fr auto;
-}
+@media (max-width: 980px) {
+  body {
+    overflow: auto;
+  }
 
-.todo-form input {
-  min-width: 0;
-  border: 0;
-  border-right: 1px solid currentColor;
-  background: transparent;
-  color: inherit;
-  padding: 0 18px;
-  font: inherit;
-  outline: none;
-}
+  .command-room {
+    height: auto;
+    min-height: 100vh;
+  }
 
-.todo-form input::placeholder {
-  color: color-mix(in srgb, currentColor 52%, transparent);
-}
-
-.todo-list {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  overflow: auto;
-}
-
-.todo-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 64px;
-  padding: 0 14px 0 18px;
-}
-
-.todo-card label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  font-weight: 800;
-}
-
-.todo-card input {
-  width: 18px;
-  height: 18px;
-  accent-color: currentColor;
-}
-
-.todo-card.is-done span {
-  text-decoration: line-through;
-  opacity: 0.58;
-}
-
-.icon-button {
-  min-height: 36px;
-  padding: 0 10px;
-  background: transparent;
-  color: inherit;
-}
-
-@media (max-width: 640px) {
-  .todo-form {
+  .hero,
+  .board,
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 
-  .todo-form input {
-    min-height: 48px;
-    border-right: 0;
-    border-bottom: 1px solid currentColor;
+  .hero-actions {
+    justify-content: start;
   }
 }
 `
@@ -495,7 +982,7 @@ function electronMainSource(language: ScriptLanguage): string {
   const functionReturn = language === 'ts' ? ': void' : ''
   const ipcTypes = language === 'ts' ? ', windowId: string' : ', windowId'
   const actionTypes = language === 'ts' ? ', action' : ', action'
-  return `import { app, BrowserWindow, ipcMain, shell } from 'electron'
+  return `import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
 ${typeImport}import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { RenderWindowManager } from '@renderizer/vue/electron'
@@ -508,7 +995,7 @@ ${variableTypes}
 
 function defaultRenderWindowOptions()${returnType} {
   const options${optionsType} = {
-    backgroundColor: '#10141c',
+    backgroundColor: '#FEF9F4',
   }
   const width = renderizerConfig.windows?.default?.width
   const height = renderizerConfig.windows?.default?.height
@@ -518,12 +1005,15 @@ function defaultRenderWindowOptions()${returnType} {
 }
 
 function createMainWindow()${functionReturn} {
+  Menu.setApplicationMenu(null)
+
   mainWindow = new BrowserWindow({
-    width: 1120,
-    height: 760,
+    width: 1020,
+    height: 720,
     minWidth: 720,
     minHeight: 480,
-    backgroundColor: '#10141c',
+    autoHideMenuBar: true,
+    backgroundColor: '#FEF9F4',
     webPreferences: {
       preload: path.join(__dirname, 'preload.${language === 'ts' ? 'js' : 'js'}'),
       contextIsolation: true,
