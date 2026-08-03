@@ -1,53 +1,57 @@
-<img width="1546" height="423" alt="renderizer_banner" src="https://github.com/user-attachments/assets/919b6722-a24c-4317-9895-4138e45bb470" />
+<img width="1546" height="423" alt="Renderizer banner" src="https://github.com/user-attachments/assets/919b6722-a24c-4317-9895-4138e45bb470" />
 
 # Renderizer
 
-Renderizer is a framework for building lightweight multi-window Electron apps without booting a second frontend app for every window.
+Renderizer is a framework for building lightweight multi-window Electron apps without booting a second frontend runtime for every window.
 
-Render one frontend runtime across multiple native windows. Keep your Vue state, theme, styles and components in one app, while Renderizer turns extra Electron windows into render surfaces.
+Render Vue interfaces across native Electron windows while keeping state, theme, styles and components in one app.
 
 ```vue
 <RenderWindow
   v-model:open="open"
-  window-id="inspector"
-  config-id="inspector"
+  window-id="todos"
+  config-id="todos"
 >
-  <InspectorPanel />
+  <TodoPanel />
 </RenderWindow>
 ```
 
-## Packages
+> [!IMPORTANT]
+> Renderizer is currently in alpha. The Vue adapter is available now; JavaScript and React adapters are planned.
 
-- `@renderizer/core`: framework-agnostic browser runtime for opening child documents and syncing document state.
-- `@renderizer/vue`: Vue components, composables, and optional Electron integration helpers.
-- `@renderizer/create`: CLI for adding Renderizer to existing projects.
-- `@renderizer/js`: planned DOM-first adapter for vanilla JavaScript apps.
-- `@renderizer/react`: planned React components, hooks, and optional Electron integration helpers.
+<img src="docs/assets/separator.png" alt="" />
 
-## Why This Exists
+## Why Renderizer
 
-Traditional Electron multi-window apps often spin up another renderer route or another frontend app instance for every window. That works, but it can duplicate app bootstrap, state setup, clients, caches and memory.
+Traditional Electron multi-window apps usually start another route, another renderer, or another frontend app instance for each window. That can duplicate state setup, clients, caches, boot time and memory.
 
-Renderizer keeps the app state in one runtime and treats native windows as extra documents.
+Renderizer keeps one frontend runtime alive and turns native Electron windows into extra render surfaces.
+
+![Renderizer shared Vue state across Electron windows](docs/assets/shared-states.gif)
+
+> [!TIP]
+> The second window is still a native Electron `BrowserWindow`; your Vue state and styles are just rendered into it.
+
+<img src="docs/assets/separator.png" alt="" />
 
 ## Quick Start
 
-Add Renderizer to an existing project:
+Create a Vue + Electron + Renderizer template:
 
 ```bash
 npm create @renderizer
 ```
 
-The CLI asks for:
+![Renderizer CLI creating a Vue Electron template](docs/assets/renderizer-cli.gif)
 
-- The project root.
-- The adapter to install.
-- The renderer app path.
-- The Electron app path.
-- Whether to create `renderizer.config.ts` or `renderizer.config.js`.
-- Whether to create an example `RenderWindow` component.
+The CLI can create a complete template project or add Renderizer to an existing Electron app.
 
-## Vue Setup
+> [!NOTE]
+> Template mode writes the Vue app, Electron main/preload files, `renderizer.config.ts`, installs dependencies, and can start the app for you.
+
+<img src="docs/assets/separator.png" alt="" />
+
+## Vue Usage
 
 Install the Vue adapter:
 
@@ -68,41 +72,7 @@ createApp(App)
   .mount('#app')
 ```
 
-Create `renderizer.config.ts` at your project root:
-
-```ts
-import { defineRenderizerConfig } from '@renderizer/vue'
-
-export default defineRenderizerConfig({
-  adapter: 'vue',
-  paths: {
-    renderer: './apps/client',
-    electron: './apps/desktop',
-  },
-  windows: {
-    default: {
-      width: 1180,
-      height: 780,
-      popup: true,
-    },
-    presets: [
-      {
-        id: 'inspector',
-        title: 'Inspector',
-        width: 1200,
-        height: 760,
-        popup: true,
-        minWidth: 720,
-        minHeight: 480,
-        frame: false,
-        backgroundColor: '#111318',
-      },
-    ],
-  },
-})
-```
-
-Render a Vue component into a native Electron window:
+Render a component into a native Electron window:
 
 ```vue
 <script setup lang="ts">
@@ -113,23 +83,75 @@ const open = ref(false)
 </script>
 
 <template>
+  <button type="button" @click="open = true">
+    Open Todo Window
+  </button>
+
   <RenderWindow
     v-model:open="open"
-    window-id="inspector"
-    config-id="inspector"
+    window-id="todos"
+    config-id="todos"
+    fallback="none"
   >
-    <InspectorPanel />
+    <TodoPanel />
   </RenderWindow>
 </template>
 ```
+
+<img src="docs/assets/separator.png" alt="" />
+
+## Configuration
+
+Create `renderizer.config.ts` at the project root:
+
+```ts
+import { defineRenderizerConfig } from '@renderizer/vue'
+
+export default defineRenderizerConfig({
+  adapter: 'vue',
+  windows: {
+    default: {
+      width: 1180,
+      height: 780,
+      popup: true,
+    },
+    presets: [
+      {
+        id: 'todos',
+        title: 'Renderizer Todos',
+        width: 940,
+        height: 680,
+        minWidth: 720,
+        minHeight: 480,
+        frame: true,
+        backgroundColor: '#FEF9F4',
+      },
+    ],
+  },
+})
+```
+
+> [!NOTE]
+> Use `config-id` on `RenderWindow` to reuse a preset from `renderizer.config.ts`.
+
+<img src="docs/assets/separator.png" alt="" />
 
 ## Electron Setup
 
 In the Electron main process:
 
 ```ts
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 import { RenderWindowManager } from '@renderizer/vue/electron'
+
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    preload: '/absolute/path/to/preload.js',
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: false,
+  },
+})
 
 const windows = new RenderWindowManager({
   preloadPath: '/absolute/path/to/preload.js',
@@ -158,17 +180,22 @@ import { exposeRenderizerBridge } from '@renderizer/vue/preload'
 exposeRenderizerBridge()
 ```
 
-## Example
+> [!WARNING]
+> The Electron preload must be available to both the main window and Renderizer child windows.
 
-The first official demo is a single-package Vue + Electron app:
+<img src="docs/assets/separator.png" alt="" />
 
-```bash
-npm run dev --workspace @renderizer/example-vue-electron-single
-npm run dev:electron --workspace @renderizer/example-vue-electron-single
-```
+## Packages
 
-The demo opens a native inspector window from the same Vue runtime and syncs theme/style changes from the main window.
+- `@renderizer/core`: framework-agnostic browser runtime for child documents and style/theme sync.
+- `@renderizer/vue`: Vue components, composables and Electron integration helpers.
+- `@renderizer/create`: interactive CLI for templates and existing projects.
+- `@renderizer/js`: planned DOM-first adapter.
+- `@renderizer/react`: planned React adapter.
 
 ## Status
 
-Renderizer is in alpha. The first milestone targets Vue apps that already use Electron. JavaScript and React adapters are planned after the Vue API is proven in real projects.
+Renderizer is in alpha. The first milestone targets Vue apps that already use Electron, then expands into JavaScript and React adapters.
+
+> [!CAUTION]
+> APIs may change before the first stable release.
