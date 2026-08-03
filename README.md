@@ -1,4 +1,4 @@
-<img width="1546" height="423" alt="Renderizer banner" src="https://github.com/user-attachments/assets/919b6722-a24c-4317-9895-4138e45bb470" />
+<img alt="Renderizer banner" src="https://github.com/user-attachments/assets/919b6722-a24c-4317-9895-4138e45bb470" />
 
 # Renderizer
 
@@ -9,10 +9,10 @@ Render Vue interfaces across native Electron windows while keeping state, theme,
 ```vue
 <RenderWindow
   v-model:open="open"
-  window-id="todos"
-  config-id="todos"
+  window-id="settings-panel"
+  config-id="settings-panel"
 >
-  <TodoPanel />
+  <SettingsPanel />
 </RenderWindow>
 ```
 
@@ -39,7 +39,7 @@ Renderizer keeps one frontend runtime alive and turns native Electron windows in
 Create a Vue + Electron + Renderizer template:
 
 ```bash
-npm create @renderizer
+npx @renderizer/create
 ```
 
 ![Renderizer CLI creating a Vue Electron template](docs/assets/renderizer-cli.gif)
@@ -84,16 +84,16 @@ const open = ref(false)
 
 <template>
   <button type="button" @click="open = true">
-    Open Todo Window
+    Open Settings Window
   </button>
 
   <RenderWindow
     v-model:open="open"
-    window-id="todos"
-    config-id="todos"
+    window-id="settings-panel"
+    config-id="settings-panel"
     fallback="none"
   >
-    <TodoPanel />
+    <SettingsPanel />
   </RenderWindow>
 </template>
 ```
@@ -117,8 +117,8 @@ export default defineRenderizerConfig({
     },
     presets: [
       {
-        id: 'todos',
-        title: 'Renderizer Todos',
+        id: 'settings-panel',
+        title: 'Renderizer Settings',
         width: 940,
         height: 680,
         minWidth: 720,
