@@ -216,7 +216,8 @@ export class RenderWindowManager {
     }
 
     const sendState = () => {
-      this.opener?.send('renderizer-window-state', {
+      if (!this.opener || this.opener.isDestroyed() || window.isDestroyed()) return
+      this.opener.send('renderizer-window-state', {
         windowId,
         ...this.readState(window),
       })
@@ -228,7 +229,7 @@ export class RenderWindowManager {
     window.on('leave-full-screen', sendState)
     window.on('closed', () => {
       if (this.windows.get(windowId) === window) this.windows.delete(windowId)
-      this.opener?.send('renderizer-window-closed', { windowId })
+      if (!this.opener?.isDestroyed()) this.opener?.send('renderizer-window-closed', { windowId })
     })
   }
 
@@ -239,9 +240,15 @@ export class RenderWindowManager {
   }
 
   private readState(window: BrowserWindow | null | undefined): RenderWindowState {
+    if (!window || window.isDestroyed()) {
+      return {
+        isMaximized: false,
+        isFullScreen: false,
+      }
+    }
     return {
-      isMaximized: window?.isMaximized() ?? false,
-      isFullScreen: window?.isFullScreen() ?? false,
+      isMaximized: window.isMaximized(),
+      isFullScreen: window.isFullScreen(),
     }
   }
 }

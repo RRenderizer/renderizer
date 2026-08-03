@@ -209,6 +209,7 @@ const cards = ref([
 const events = ref([
   { id: 1, label: 'Command room online', detail: 'Three Electron windows share one Vue runtime.', time: '00:00' },
 ])
+const eventCount = ref(events.value.length)
 
 const selectedCardId = ref(2)
 const timelineOpen = ref(false)
@@ -240,6 +241,7 @@ function eventTime() {
 
 function pushEvent(label, detail) {
   events.value.unshift({ id: Date.now(), label, detail, time: eventTime() })
+  eventCount.value += 1
   events.value = events.value.slice(0, 8)
 }
 
@@ -443,7 +445,7 @@ onBeforeUnmount(() => {
     <section class="timeline-window">
       <header class="window-header">
         <span>Live Timeline</span>
-        <strong>{{ events.length }} events</strong>
+        <strong>{{ eventCount }} events</strong>
       </header>
       <TransitionGroup name="timeline-flow" tag="ul" class="timeline-list">
         <li v-for="event in events" :key="event.id" class="timeline-event">
@@ -1099,7 +1101,7 @@ function packageJsonSource(projectName: string, language: ScriptLanguage): strin
       'type-check': language === 'ts' ? 'vue-tsc --noEmit && tsc -p tsconfig.electron.json --noEmit' : 'vite build',
     },
     dependencies: {
-      '@renderizer/vue': '^0.1.0-alpha.6',
+      '@renderizer/vue': '^0.1.0-alpha.7',
       '@vitejs/plugin-vue': '^6.0.1',
       vite: '^7.0.6',
       vue: '^3.5.18',
