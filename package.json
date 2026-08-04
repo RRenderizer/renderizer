@@ -1,6 +1,6 @@
 {
   "name": "renderizer",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0-beta.0",
   "private": true,
   "description": "Framework adapters for lightweight multi-window Electron apps powered by one UI runtime.",
   "type": "module",

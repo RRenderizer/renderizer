@@ -1,6 +1,6 @@
 {
   "name": "@renderizer/vue",
-  "version": "0.1.0-alpha.7",
+  "version": "1.0.0-beta.0",
   "description": "Vue adapter for Renderizer multi-window surfaces.",
   "type": "module",
   "main": "./dist/index.js",
@@ -45,7 +45,7 @@
   "homepage": "https://github.com/RRenderizer/renderizer#readme",
   "publishConfig": {
     "access": "public",
-    "tag": "alpha"
+    "tag": "latest"
   },
   "peerDependencies": {
     "electron": ">=28",
@@ -57,7 +57,7 @@
     }
   },
   "dependencies": {
-    "@renderizer/core": "^0.1.0-alpha.4"
+    "@renderizer/core": "^1.0.0-beta.0"
   },
   "devDependencies": {
     "electron": "^43.2.0",

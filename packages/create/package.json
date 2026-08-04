@@ -1,6 +1,6 @@
 {
   "name": "@renderizer/create",
-  "version": "0.1.0-alpha.17",
+  "version": "1.0.0-beta.0",
   "description": "Interactive CLI for adding Renderizer to an existing project.",
   "type": "module",
   "bin": {
@@ -38,7 +38,7 @@
   "homepage": "https://github.com/RRenderizer/renderizer#readme",
   "publishConfig": {
     "access": "public",
-    "tag": "alpha"
+    "tag": "latest"
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0"

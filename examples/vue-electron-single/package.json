@@ -1,6 +1,6 @@
 {
   "name": "@renderizer/example-vue-electron-single",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0-beta.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
   },
   "main": "dist-electron/main.js",
   "dependencies": {
-    "@renderizer/vue": "0.1.0-alpha.2",
+    "@renderizer/vue": "^1.0.0-beta.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "vite": "^7.0.6",
     "vue": "^3.5.18"
